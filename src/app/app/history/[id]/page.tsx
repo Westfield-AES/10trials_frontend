@@ -36,12 +36,17 @@ export default function HistoryDetailPage() {
     );
   if (detail.isError)
     return (
-      <section className="card mx-auto max-w-lg p-8 text-center" role="alert">
-        <h1 className="text-2xl font-black text-[#032e4d]">We couldn’t open this report</h1>
+      <section className="card mx-auto max-w-lg p-8 text-center">
+        <h1 className="text-2xl font-black text-[#032e4d]">
+          We couldn’t open this report
+        </h1>
         <p className="mt-3 text-[#607282]">
-          {detail.error instanceof Error ? detail.error.message : "Please try again."}
+          Check your connection, then try again.
         </p>
-        <button className="mt-6 rounded-xl bg-[#ff6b00] px-5 py-3 font-extrabold text-white" onClick={() => detail.refetch()}>
+        <button
+          className="mt-6 rounded-xl bg-[#ff6b00] px-5 py-3 font-extrabold text-white"
+          onClick={() => detail.refetch()}
+        >
           Try again
         </button>
       </section>

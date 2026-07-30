@@ -15,6 +15,7 @@ import type { AccountOverview, Job, Language } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useI18n } from "@/components/providers/i18n-provider";
+import { toast } from "@/lib/toast";
 
 interface Discovery {
   found: boolean;
@@ -57,12 +58,10 @@ export default function NewSessionPage() {
   const [timed, setTimed] = useState(true);
   const [target, setTarget] = useState(80);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
 
   async function identify() {
     if (description.trim().length < 2) return;
     setBusy(true);
-    setError("");
     setProgress(5);
     try {
       const created = await apiRequest<{ job_id: string }>(
@@ -76,7 +75,7 @@ export default function NewSessionPage() {
       if (job.status !== "succeeded" || !job.result?.exam)
         throw new Error(job.error_message || "Could not identify that exam.");
       if (!job.result.exam.found) {
-        setError(
+        toast.error(
           job.result.exam.clarification_needed ||
             "Add the country or governing body and try again.",
         );
@@ -88,8 +87,9 @@ export default function NewSessionPage() {
       setFormat(found.suggested_format || "mixed");
       setCurriculumYear(found.curriculum_years?.[0] || "Current");
       setStep(2);
+      toast.success("Exam identified.");
     } catch (nextError) {
-      setError(
+      toast.error(
         nextError instanceof Error
           ? nextError.message
           : "Could not identify that exam.",
@@ -102,7 +102,6 @@ export default function NewSessionPage() {
   async function generate() {
     if (!discovery) return;
     setBusy(true);
-    setError("");
     try {
       const result = await apiRequest<{ session_id: string; job_id: string }>(
         "/api/v1/sessions",
@@ -132,11 +131,12 @@ export default function NewSessionPage() {
             curriculum_year: curriculumYear,
             target_score: target,
           }),
+          toast: { success: "Session generation started." },
         },
       );
       router.push(`/app/session?job=${result.job_id}`);
     } catch (nextError) {
-      setError(
+      toast.error(
         nextError instanceof Error
           ? nextError.message
           : "Could not create the session.",
@@ -429,14 +429,6 @@ export default function NewSessionPage() {
               </Button>
             </div>
           </div>
-        )}
-        {error && (
-          <p
-            role="alert"
-            className="mt-5 rounded-xl bg-red-50 p-4 text-sm font-bold text-red-700"
-          >
-            {error}
-          </p>
         )}
       </section>
     </div>

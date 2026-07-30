@@ -16,6 +16,7 @@ import { auth, googleProvider } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import { firebaseErrorMessage } from "@/lib/firebase-errors";
+import { toast } from "@/lib/toast";
 
 type Mode = "login" | "signup" | "forgot";
 
@@ -28,19 +29,15 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [is13, setIs13] = useState(false);
   const [under18, setUnder18] = useState(false);
   const [guardian, setGuardian] = useState(false);
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    setError("");
-    setMessage("");
     setBusy(true);
     try {
       if (mode === "forgot") {
         await sendPasswordResetEmail(auth, email);
-        setMessage(
+        toast.success(
           "Password reset instructions are on their way. Check your inbox.",
         );
       } else if (mode === "signup") {
@@ -57,6 +54,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           JSON.stringify({ under18, guardian }),
         );
         await sendEmailVerification(credential.user);
+        toast.success("Account created. Check your email to verify it.");
         router.push("/verify-email");
       } else {
         const credential = await signInWithEmailAndPassword(
@@ -65,17 +63,19 @@ export function AuthForm({ mode }: { mode: Mode }) {
           password,
         );
         if (!credential.user.emailVerified) {
+          toast.info("Verify your email to finish signing in.");
           router.push("/verify-email");
         } else {
+          toast.success("Welcome back.");
           router.push("/app");
         }
       }
     } catch (nextError) {
       if ((nextError as Error).message === "AGE")
-        setError("You must be at least 13 to use 10Trials.");
+        toast.error("You must be at least 13 to use 10Trials.");
       else if ((nextError as Error).message === "GUARDIAN")
-        setError("Guardian consent is required for users under 18.");
-      else setError(firebaseErrorMessage(nextError));
+        toast.error("Guardian consent is required for users under 18.");
+      else toast.error(firebaseErrorMessage(nextError));
     } finally {
       setBusy(false);
     }
@@ -83,12 +83,12 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
   async function google() {
     setBusy(true);
-    setError("");
     try {
       await signInWithPopup(auth, googleProvider);
+      toast.success("You’re signed in.");
       router.replace("/app");
     } catch (nextError) {
-      setError(firebaseErrorMessage(nextError));
+      toast.error(firebaseErrorMessage(nextError));
     } finally {
       setBusy(false);
     }
@@ -104,7 +104,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
     mode === "login"
       ? "Pick up where you left off."
       : mode === "signup"
-        ? "Your first five sessions each month are free."
+        ? "Your first ten sessions each month are free."
         : "We’ll email you a secure reset link.";
 
   return (
@@ -223,22 +223,6 @@ export function AuthForm({ mode }: { mode: Mode }) {
                     </label>
                   )}
                 </div>
-              )}
-              {error && (
-                <p
-                  role="alert"
-                  className="rounded-xl bg-red-50 p-3 text-sm font-bold text-red-700"
-                >
-                  {error}
-                </p>
-              )}
-              {message && (
-                <p
-                  role="status"
-                  className="rounded-xl bg-emerald-50 p-3 text-sm font-bold text-emerald-800"
-                >
-                  {message}
-                </p>
               )}
               <Button className="w-full" disabled={busy}>
                 {busy

@@ -6,6 +6,7 @@ import { AuthProvider } from "./auth-provider";
 import { CookieConsent } from "@/components/site/cookie-consent";
 import { I18nProvider } from "./i18n-provider";
 import { ApiError } from "@/lib/api";
+import { ToastProvider } from "@/components/ui/toast";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -41,12 +42,14 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <I18nProvider>
-          {children}
-          <CookieConsent />
-        </I18nProvider>
-      </AuthProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <I18nProvider>
+            {children}
+            <CookieConsent />
+          </I18nProvider>
+        </AuthProvider>
+      </ToastProvider>
     </QueryClientProvider>
   );
 }

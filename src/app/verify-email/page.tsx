@@ -3,24 +3,31 @@
 import { sendEmailVerification } from "firebase/auth";
 import { MailCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { useAuth } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
+import { firebaseErrorMessage } from "@/lib/firebase-errors";
+import { toast } from "@/lib/toast";
 
 export default function VerifyEmailPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const [message, setMessage] = useState("");
   async function check() {
     if (!user) return;
-    await user.reload();
-    await user.getIdToken(true);
-    if (user.emailVerified) router.push("/onboarding");
-    else
-      setMessage(
-        "Not verified yet. Open the link in your email, then try again.",
-      );
+    try {
+      await user.reload();
+      await user.getIdToken(true);
+      if (user.emailVerified) {
+        toast.success("Email verified.");
+        router.push("/onboarding");
+      } else {
+        toast.info(
+          "Not verified yet. Open the link in your email, then try again.",
+        );
+      }
+    } catch (error) {
+      toast.error(firebaseErrorMessage(error, "Could not check verification."));
+    }
   }
   return (
     <main
@@ -41,14 +48,6 @@ export default function VerifyEmailPage() {
             <strong>{user?.email ?? "your email"}</strong>. Verify it before
             starting your first session.
           </p>
-          {message && (
-            <p
-              role="status"
-              className="mt-4 rounded-xl bg-amber-50 p-3 text-sm font-bold text-amber-800"
-            >
-              {message}
-            </p>
-          )}
           <Button className="mt-6 w-full" onClick={check}>
             I’ve verified my email
           </Button>
@@ -56,8 +55,17 @@ export default function VerifyEmailPage() {
             className="mt-4 text-sm font-bold text-[#07436c]"
             onClick={async () => {
               if (user) {
-                await sendEmailVerification(user);
-                setMessage("A fresh verification link has been sent.");
+                try {
+                  await sendEmailVerification(user);
+                  toast.success("A fresh verification link has been sent.");
+                } catch (error) {
+                  toast.error(
+                    firebaseErrorMessage(
+                      error,
+                      "Could not send a new verification link.",
+                    ),
+                  );
+                }
               }
             }}
           >

@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { firebaseErrorMessage } from "@/lib/firebase-errors";
+import { toast } from "@/lib/toast";
 
 export default function SettingsPage() {
   const { t } = useI18n();
@@ -36,13 +37,10 @@ export default function SettingsPage() {
   const [verificationId, setVerificationId] = useState("");
   const [deleteType, setDeleteType] = useState<"soft" | "hard" | null>(null);
   const [confirmation, setConfirmation] = useState("");
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const data = account.data;
   async function saveProfile() {
     setBusy(true);
-    setError("");
     try {
       await apiRequest("/api/v1/account/me", {
         method: "PATCH",
@@ -50,11 +48,11 @@ export default function SettingsPage() {
           display_name: name || undefined,
           preferred_language: language || undefined,
         }),
+        toast: { success: "Profile updated." },
       });
       await client.invalidateQueries({ queryKey: ["account"] });
-      setMessage("Profile updated.");
     } catch (nextError) {
-      setError(
+      toast.error(
         nextError instanceof Error
           ? nextError.message
           : "Could not update profile.",
@@ -66,7 +64,6 @@ export default function SettingsPage() {
   async function saveReminders(value: boolean) {
     const previous = reminders;
     setReminders(value);
-    setError("");
     try {
       await apiRequest("/api/v1/account/consents", {
         method: "POST",
@@ -75,19 +72,27 @@ export default function SettingsPage() {
           granted: value,
           policy_version: "v1-placeholder",
         }),
+        toast: {
+          success: value
+            ? "Study reminders enabled."
+            : "Study reminders disabled.",
+        },
       });
     } catch (nextError) {
       setReminders(previous);
-      setError(nextError instanceof Error ? nextError.message : "Could not save reminder preferences.");
+      toast.error(
+        nextError instanceof Error
+          ? nextError.message
+          : "Could not save reminder preferences.",
+      );
     }
   }
   async function sendCode() {
     if (!phone.startsWith("+")) {
-      setError("Use international format, for example +2348012345678.");
+      toast.error("Use international format, for example +2348012345678.");
       return;
     }
     setBusy(true);
-    setError("");
     try {
       const verifier = new RecaptchaVerifier(auth, "phone-recaptcha", {
         size: "invisible",
@@ -95,9 +100,14 @@ export default function SettingsPage() {
       const provider = new PhoneAuthProvider(auth);
       const id = await provider.verifyPhoneNumber(phone, verifier);
       setVerificationId(id);
-      setMessage("Verification code sent.");
+      toast.success("Verification code sent.");
     } catch (nextError) {
-      setError(firebaseErrorMessage(nextError, "Could not send the verification code."));
+      toast.error(
+        firebaseErrorMessage(
+          nextError,
+          "Could not send the verification code.",
+        ),
+      );
     } finally {
       setBusy(false);
     }
@@ -105,17 +115,27 @@ export default function SettingsPage() {
   async function verifyCode() {
     if (!auth.currentUser) return;
     setBusy(true);
-    setError("");
     try {
       const credential = PhoneAuthProvider.credential(verificationId, code);
       await linkWithCredential(auth.currentUser, credential);
       await auth.currentUser.getIdToken(true);
-      await apiRequest("/api/v1/account/link-phone", { method: "POST" });
+      await apiRequest("/api/v1/account/link-phone", {
+        method: "POST",
+        toast: {
+          success: "WhatsApp number connected to this account.",
+        },
+      });
       await client.invalidateQueries({ queryKey: ["account"] });
-      setMessage("WhatsApp number connected to this account.");
       setVerificationId("");
     } catch (nextError) {
-      setError(firebaseErrorMessage(nextError, nextError instanceof Error ? nextError.message : "Could not verify the number."));
+      toast.error(
+        firebaseErrorMessage(
+          nextError,
+          nextError instanceof Error
+            ? nextError.message
+            : "Could not verify the number.",
+        ),
+      );
     } finally {
       setBusy(false);
     }
@@ -123,7 +143,6 @@ export default function SettingsPage() {
   async function deleteAccount() {
     if (!deleteType) return;
     setBusy(true);
-    setError("");
     try {
       const path =
         deleteType === "soft"
@@ -132,11 +151,17 @@ export default function SettingsPage() {
       await apiRequest(path, {
         method: "DELETE",
         body: JSON.stringify({ confirmation }),
+        toast: {
+          success:
+            deleteType === "soft"
+              ? "Account deletion scheduled."
+              : "Account deleted.",
+        },
       });
       await auth.signOut();
       window.location.href = "/";
     } catch (nextError) {
-      setError(
+      toast.error(
         nextError instanceof Error
           ? nextError.message
           : "Could not delete account.",
@@ -153,22 +178,6 @@ export default function SettingsPage() {
       <p className="mt-2 text-[#607282]">
         Manage your profile, communication, and data.
       </p>
-      {message && (
-        <p
-          role="status"
-          className="mt-5 rounded-xl bg-emerald-50 p-4 font-bold text-emerald-800"
-        >
-          {message}
-        </p>
-      )}
-      {error && (
-        <p
-          role="alert"
-          className="mt-5 rounded-xl bg-red-50 p-4 font-bold text-red-700"
-        >
-          {error}
-        </p>
-      )}
       <section className="card mt-7 p-6">
         <h2 className="text-xl font-black text-[#032e4d]">Profile</h2>
         <div className="mt-5 grid gap-5 sm:grid-cols-2">

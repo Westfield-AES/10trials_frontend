@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Progress } from "@/components/ui/progress";
 import { useI18n } from "@/components/providers/i18n-provider";
+import { toast } from "@/lib/toast";
 
 type AnswerEvaluation = Pick<
   SessionAnswer,
@@ -37,7 +38,6 @@ export function QuestionPlayer({
   );
   const [answer, setAnswer] = useState(existing?.user_answer ?? "");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
   const [confirmSubmit, setConfirmSubmit] = useState(false);
   const [feedback, setFeedback] = useState<{
     questionIndex: number;
@@ -78,7 +78,6 @@ export function QuestionPlayer({
     if (!value.trim()) return false;
     const submittedQuestionIndex = question.index;
     setBusy(true);
-    setError("");
     setFeedback(null);
     try {
       const result = await apiRequest<{ job_id?: string }>(
@@ -108,9 +107,12 @@ export function QuestionPlayer({
         }
       }
       await onRefresh();
+      toast.success(
+        session.config.mode === "learn" ? "Answer graded." : "Answer saved.",
+      );
       return true;
     } catch (nextError) {
-      setError(
+      toast.error(
         nextError instanceof Error
           ? nextError.message
           : "Could not save the answer.",
@@ -121,7 +123,6 @@ export function QuestionPlayer({
     }
   }
   async function navigate(index: number) {
-    setError("");
     if (session.config.mode === "learn") {
       const canReview = answered.has(index) || activeQuestion?.index === index;
       if (!canReview) return;
@@ -140,7 +141,7 @@ export function QuestionPlayer({
       });
       await onRefresh();
     } catch (nextError) {
-      setError(
+      toast.error(
         nextError instanceof Error
           ? nextError.message
           : "Could not change questions.",
@@ -148,18 +149,21 @@ export function QuestionPlayer({
     }
   }
   async function flag() {
-    setError("");
+    const willFlag = !session.flagged_question_indices.includes(question.index);
     try {
       await apiRequest(`/api/v1/sessions/${session.id}/flag`, {
         method: "POST",
         body: JSON.stringify({
           question_index: question.index,
-          flagged: !session.flagged_question_indices.includes(question.index),
+          flagged: willFlag,
         }),
+        toast: {
+          success: willFlag ? "Question flagged." : "Flag removed.",
+        },
       });
       await onRefresh();
     } catch (nextError) {
-      setError(
+      toast.error(
         nextError instanceof Error
           ? nextError.message
           : "Could not update the flag.",
@@ -172,10 +176,11 @@ export function QuestionPlayer({
     try {
       await apiRequest(`/api/v1/sessions/${session.id}/submit`, {
         method: "POST",
+        toast: { success: "Simulation submitted for grading." },
       });
       await onRefresh();
     } catch (nextError) {
-      setError(
+      toast.error(
         nextError instanceof Error ? nextError.message : "Could not submit.",
       );
       setBusy(false);
@@ -321,14 +326,6 @@ export function QuestionPlayer({
                 </p>
               )}
             </div>
-          )}
-          {error && (
-            <p
-              role="alert"
-              className="mt-5 rounded-xl bg-red-50 p-3 text-sm font-bold text-red-700"
-            >
-              {error}
-            </p>
           )}
           <div className="mt-7 flex flex-wrap justify-between gap-3">
             {session.config.mode === "simulate" ? (

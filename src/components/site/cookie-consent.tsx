@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { apiRequest } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/providers/auth-provider";
+import { toast } from "@/lib/toast";
 
 type Consent = "accepted" | "essential" | null;
 
@@ -40,15 +41,20 @@ export function CookieConsent() {
       });
     }
     if (user) {
-      await apiRequest("/api/v1/account/consents", {
-        method: "POST",
-        body: JSON.stringify({
-          consent_type: "cookies",
-          granted: value === "accepted",
-          policy_version: "v1-placeholder",
-        }),
-      }).catch(() => undefined);
+      try {
+        await apiRequest("/api/v1/account/consents", {
+          method: "POST",
+          body: JSON.stringify({
+            consent_type: "cookies",
+            granted: value === "accepted",
+            policy_version: "v1-placeholder",
+          }),
+        });
+      } catch {
+        return;
+      }
     }
+    toast.success("Cookie preferences saved.");
   }
 
   if (!ready || consent) return null;

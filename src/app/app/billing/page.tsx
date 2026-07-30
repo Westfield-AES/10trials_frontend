@@ -7,6 +7,7 @@ import { apiRequest } from "@/lib/api";
 import type { AccountOverview } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/components/providers/i18n-provider";
+import { toast } from "@/lib/toast";
 
 export default function BillingPage() {
   const { t } = useI18n();
@@ -17,11 +18,9 @@ export default function BillingPage() {
   const [currency, setCurrency] = useState<"NGN" | "USD">("NGN");
   const [annual, setAnnual] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
   const pro = account.data?.user.plan === "pro";
   async function checkout() {
     setBusy(true);
-    setError("");
     try {
       const result = await apiRequest<{ authorization_url: string }>(
         "/api/v1/billing/checkout",
@@ -31,11 +30,12 @@ export default function BillingPage() {
             currency,
             interval: annual ? "annual" : "monthly",
           }),
+          toast: { success: "Secure checkout is ready." },
         },
       );
       window.location.assign(result.authorization_url);
     } catch (nextError) {
-      setError(
+      toast.error(
         nextError instanceof Error
           ? nextError.message
           : "Could not open checkout.",
@@ -45,12 +45,14 @@ export default function BillingPage() {
   }
   async function trial() {
     setBusy(true);
-    setError("");
     try {
-      await apiRequest("/api/v1/billing/trial", { method: "POST" });
+      await apiRequest("/api/v1/billing/trial", {
+        method: "POST",
+        toast: { success: "Your 7-day Pro trial has started." },
+      });
       await account.refetch();
     } catch (nextError) {
-      setError(
+      toast.error(
         nextError instanceof Error
           ? nextError.message
           : "Could not start trial.",
@@ -64,11 +66,14 @@ export default function BillingPage() {
     try {
       const result = await apiRequest<{ url: string }>(
         "/api/v1/billing/manage",
-        { method: "POST" },
+        {
+          method: "POST",
+          toast: { success: "Opening subscription management." },
+        },
       );
       window.location.assign(result.url);
     } catch (nextError) {
-      setError(
+      toast.error(
         nextError instanceof Error
           ? nextError.message
           : "Could not open billing management.",
@@ -123,7 +128,7 @@ export default function BillingPage() {
           </p>
           <ul className="mt-6 space-y-3 text-sm">
             {[
-              "5 sessions every calendar month",
+              "10 sessions every calendar month",
               "50 questions total",
               "Up to 10 questions per session",
               "Learn and Simulate modes",
@@ -195,14 +200,6 @@ export default function BillingPage() {
           )}
         </article>
       </div>
-      {error && (
-        <p
-          role="alert"
-          className="mt-5 rounded-xl bg-red-50 p-4 font-bold text-red-700"
-        >
-          {error}
-        </p>
-      )}
       <p className="mt-6 text-xs leading-5 text-[#607282]">
         Paid access includes a three-day grace period after a failed renewal.
         Paystack handles payment details securely; 10Trials does not store card

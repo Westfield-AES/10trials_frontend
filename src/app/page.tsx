@@ -239,7 +239,7 @@ export default function HomePage() {
               One exam. Ten trials. A stronger you each time.
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-[#607282]">
-              Start with five free sessions every calendar month.
+              Start with ten free sessions every calendar month.
             </p>
             <Link
               href="/signup"
