@@ -28,7 +28,7 @@ export default function PricingPage() {
               price="₦0"
               body="A meaningful monthly allowance."
               features={[
-                "5 sessions per month",
+                "10 sessions per month",
                 "50 questions",
                 "10 questions per session",
                 "Learn and Simulate",

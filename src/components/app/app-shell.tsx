@@ -23,11 +23,12 @@ import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/logo";
 import { Spinner } from "@/components/ui/spinner";
 import { useI18n } from "@/components/providers/i18n-provider";
+import { firebaseErrorMessage } from "@/lib/firebase-errors";
+import { toast } from "@/lib/toast";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [restoring, setRestoring] = useState(false);
-  const [actionError, setActionError] = useState("");
   const pathname = usePathname();
   const router = useRouter();
   const { t, setLocale } = useI18n();
@@ -65,22 +66,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       overview.error instanceof ApiError && overview.error.status === 401;
     return (
       <div className="grid min-h-screen place-items-center bg-[#fffaf5] p-6">
-        <section className="card max-w-lg p-8 text-center" role="alert">
+        <section className="card max-w-lg p-8 text-center">
           <h1 className="text-2xl font-black text-[#032e4d]">
-            {authFailure ? "Your session has expired" : "We couldn’t open your account"}
+            {authFailure
+              ? "Your session has expired"
+              : "We couldn’t open your account"}
           </h1>
           <p className="mt-3 leading-7 text-[#607282]">
-            {overview.error instanceof Error
-              ? overview.error.message
-              : "Please try again."}
+            {authFailure
+              ? "Sign in again to keep your account secure."
+              : "Check your connection, then try again."}
           </p>
           <div className="mt-6 flex justify-center gap-3">
             {authFailure ? (
               <button
                 className="rounded-xl bg-[#ff6b00] px-5 py-3 font-extrabold text-white"
                 onClick={async () => {
-                  await signOut(auth);
-                  router.replace("/login");
+                  try {
+                    await signOut(auth);
+                    toast.info("You’ve been signed out.");
+                    router.replace("/login");
+                  } catch (error) {
+                    toast.error(firebaseErrorMessage(error));
+                  }
                 }}
               >
                 Sign in again
@@ -104,14 +112,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="grid min-h-screen place-items-center bg-[#fffaf5] p-6">
         <section className="card max-w-lg p-8 text-center">
           <h1 className="text-2xl font-black text-[#032e4d]">
-            {restorable ? "Your account is scheduled for deletion" : "This account is unavailable"}
+            {restorable
+              ? "Your account is scheduled for deletion"
+              : "This account is unavailable"}
           </h1>
           <p className="mt-3 leading-7 text-[#607282]">
             {restorable
               ? "Restore it during the 30-day recovery period to continue learning."
               : "Contact support if you believe this account status is incorrect."}
           </p>
-          {actionError && <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm font-bold text-red-700" role="alert">{actionError}</p>}
           <div className="mt-6 flex justify-center gap-3">
             {restorable && (
               <button
@@ -119,12 +128,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 className="rounded-xl bg-[#ff6b00] px-5 py-3 font-extrabold text-white disabled:opacity-60"
                 onClick={async () => {
                   setRestoring(true);
-                  setActionError("");
                   try {
-                    await apiRequest("/api/v1/account/me/restore", { method: "POST" });
+                    await apiRequest("/api/v1/account/me/restore", {
+                      method: "POST",
+                      toast: { success: "Your account has been restored." },
+                    });
                     await overview.refetch();
                   } catch (nextError) {
-                    setActionError(nextError instanceof Error ? nextError.message : "Could not restore the account.");
+                    toast.error(
+                      nextError instanceof Error
+                        ? nextError.message
+                        : "Could not restore the account.",
+                    );
                   } finally {
                     setRestoring(false);
                   }
@@ -136,8 +151,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <button
               className="rounded-xl px-5 py-3 font-extrabold text-[#607282]"
               onClick={async () => {
-                await signOut(auth);
-                router.replace("/");
+                try {
+                  await signOut(auth);
+                  toast.info("You’ve been signed out.");
+                  router.replace("/");
+                } catch (error) {
+                  toast.error(firebaseErrorMessage(error));
+                }
               }}
             >
               Sign out
@@ -188,21 +208,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </p>
         <p className="mt-1 text-xs text-[#c7d8e4]">
           {overview.data?.usage.sessions ?? 0} of{" "}
-          {overview.data?.entitlements.sessions_per_month ?? 5} sessions used
+          {overview.data?.entitlements.sessions_per_month ?? 10} sessions used
         </p>
         <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/15">
           <div
             className="h-full bg-[#ff6b00]"
             style={{
-              width: `${Math.min(100, ((overview.data?.usage.sessions ?? 0) / (overview.data?.entitlements.sessions_per_month ?? 5)) * 100)}%`,
+              width: `${Math.min(100, ((overview.data?.usage.sessions ?? 0) / (overview.data?.entitlements.sessions_per_month ?? 10)) * 100)}%`,
             }}
           />
         </div>
       </div>
       <button
         onClick={async () => {
-          await signOut(auth);
-          router.push("/");
+          try {
+            await signOut(auth);
+            toast.info("You’ve been signed out.");
+            router.push("/");
+          } catch (error) {
+            toast.error(firebaseErrorMessage(error));
+          }
         }}
         className="mt-4 flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-[#607282] hover:bg-slate-100"
       >

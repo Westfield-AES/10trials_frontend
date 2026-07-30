@@ -7,6 +7,7 @@ import type { Language } from "@/lib/types";
 import { AuthGuard } from "@/components/providers/auth-guard";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
+import { toast } from "@/lib/toast";
 
 const languages: Array<{ code: Language; label: string }> = [
   { code: "en", label: "English" },
@@ -22,7 +23,6 @@ function OnboardingForm() {
   const [under18, setUnder18] = useState(false);
   const [guardian, setGuardian] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
   useEffect(() => {
     const timer = window.setTimeout(() => {
       const saved = sessionStorage.getItem("10trials-age");
@@ -37,11 +37,10 @@ function OnboardingForm() {
   }, []);
   async function finish() {
     if (!is13 || (under18 && !guardian)) {
-      setError("Confirm the age and guardian requirements to continue.");
+      toast.error("Confirm the age and guardian requirements to continue.");
       return;
     }
     setBusy(true);
-    setError("");
     try {
       await apiRequest("/api/v1/account/age-confirmation", {
         method: "POST",
@@ -55,12 +54,13 @@ function OnboardingForm() {
       await apiRequest("/api/v1/account/me", {
         method: "PATCH",
         body: JSON.stringify({ preferred_language: language }),
+        toast: { success: "Your study preferences are ready." },
       });
       localStorage.setItem("10trials-language", language);
       sessionStorage.removeItem("10trials-age");
       router.push("/app");
     } catch (nextError) {
-      setError(
+      toast.error(
         nextError instanceof Error
           ? nextError.message
           : "Could not save your preferences.",
@@ -132,14 +132,6 @@ function OnboardingForm() {
               </label>
             )}
           </div>
-          {error && (
-            <p
-              role="alert"
-              className="mt-4 rounded-xl bg-red-50 p-3 font-bold text-red-700"
-            >
-              {error}
-            </p>
-          )}
           <Button
             className="mt-7 w-full sm:w-auto"
             onClick={finish}

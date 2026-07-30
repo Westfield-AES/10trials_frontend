@@ -13,16 +13,22 @@ import { Spinner } from "@/components/ui/spinner";
 import { QuestionPlayer } from "@/components/session/question-player";
 import { ReportView } from "@/components/session/report-view";
 import { useI18n } from "@/components/providers/i18n-provider";
+import { toast } from "@/lib/toast";
 
 export default function SessionPage() {
   const { t } = useI18n();
   const client = useQueryClient();
   const [jobProgress, setJobProgress] = useState(0);
   const [abandon, setAbandon] = useState(false);
-  const [error, setError] = useState("");
   const session = useQuery({
     queryKey: ["active-session"],
-    queryFn: () => apiRequest<WebSession>("/api/v1/sessions/active"),
+    queryFn: () =>
+      apiRequest<WebSession>("/api/v1/sessions/active", {
+        toast: {
+          error: (error) =>
+            !(error instanceof ApiError && error.status === 404),
+        },
+      }),
     retry: false,
     refetchInterval: (query) =>
       ["generating", "grading"].includes(query.state.data?.status ?? "")
@@ -51,7 +57,11 @@ export default function SessionPage() {
       })
       .catch((nextError) => {
         if (active) {
-          setError(nextError.message);
+          toast.error(
+            nextError instanceof Error
+              ? nextError.message
+              : "Could not finish this session operation.",
+          );
           client.invalidateQueries({ queryKey: ["active-session"] });
         }
       });
@@ -59,6 +69,14 @@ export default function SessionPage() {
       active = false;
     };
   }, [client, watchedJob]);
+  useEffect(() => {
+    if (current?.status === "failed") {
+      toast.error(
+        current.error_message ||
+          "We couldn’t generate this session. Adjust the setup and try again.",
+      );
+    }
+  }, [current?.error_message, current?.status]);
 
   if (session.isLoading)
     return (
@@ -88,14 +106,12 @@ export default function SessionPage() {
     );
   if (session.isError)
     return (
-      <div className="card mx-auto max-w-lg p-8 text-center" role="alert">
+      <div className="card mx-auto max-w-lg p-8 text-center">
         <h1 className="text-2xl font-black text-[#032e4d]">
           We couldn’t open this session
         </h1>
         <p className="mt-3 text-[#607282]">
-          {session.error instanceof Error
-            ? session.error.message
-            : "Please try again."}
+          Check your connection, then try again.
         </p>
         <Button className="mt-6" onClick={() => session.refetch()}>
           Try again
@@ -108,23 +124,35 @@ export default function SessionPage() {
   }
   const sessionId = current.id;
   async function start() {
-    setError("");
     try {
-      await apiRequest(`/api/v1/sessions/${sessionId}/start`, { method: "POST" });
+      await apiRequest(`/api/v1/sessions/${sessionId}/start`, {
+        method: "POST",
+        toast: { success: "Session started." },
+      });
       await refresh();
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "Could not start the session.");
+      toast.error(
+        nextError instanceof Error
+          ? nextError.message
+          : "Could not start the session.",
+      );
     }
   }
   async function confirmAbandon() {
-    setError("");
     try {
-      await apiRequest(`/api/v1/sessions/${sessionId}`, { method: "DELETE" });
+      await apiRequest(`/api/v1/sessions/${sessionId}`, {
+        method: "DELETE",
+        toast: { success: "Session cleared." },
+      });
       await client.invalidateQueries({ queryKey: ["account"] });
       window.location.href = "/app/new";
     } catch (nextError) {
       setAbandon(false);
-      setError(nextError instanceof Error ? nextError.message : "Could not abandon the session.");
+      toast.error(
+        nextError instanceof Error
+          ? nextError.message
+          : "Could not abandon the session.",
+      );
     }
   }
   if (current.status === "generating" || current.status === "grading")
@@ -149,9 +177,6 @@ export default function SessionPage() {
           <div className="mt-7 text-left">
             <Progress value={jobProgress || 5} label={t("progress")} />
           </div>
-          {error && (
-            <p className="mt-4 text-sm font-bold text-red-700">{error}</p>
-          )}
           <button
             className="mt-6 text-sm font-bold text-[#607282] underline"
             onClick={() => setAbandon(true)}
@@ -224,11 +249,6 @@ export default function SessionPage() {
                 ? "The timer starts only when you press Start. Closing the browser will not pause it."
                 : "Answers lock after grading, but you can review previous feedback throughout the session."}
             </p>
-            {error && (
-              <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm font-bold text-red-700" role="alert">
-                {error}
-              </p>
-            )}
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
               <Button onClick={start}>
                 <Play size={17} />
@@ -265,19 +285,22 @@ export default function SessionPage() {
     return <QuestionPlayer session={current} onRefresh={refresh} />;
   if (current.status === "failed")
     return (
-      <div className="card mx-auto max-w-lg p-8 text-center" role="alert">
+      <div className="card mx-auto max-w-lg p-8 text-center">
         <AlertTriangle className="mx-auto text-red-600" />
         <h1 className="mt-4 text-2xl font-black text-[#032e4d]">
           We couldn’t generate this session
         </h1>
         <p className="mt-3 leading-7 text-[#607282]">
-          {error || current.error_message || "Please adjust the setup and try again."}
+          Please adjust the setup and try again.
         </p>
         <div className="mt-6 flex justify-center gap-3">
           <Button variant="danger" onClick={confirmAbandon}>
             Clear session
           </Button>
-          <Link className="rounded-xl px-5 py-3 font-extrabold text-[#e85b00]" href="/app/new">
+          <Link
+            className="rounded-xl px-5 py-3 font-extrabold text-[#e85b00]"
+            href="/app/new"
+          >
             Back to setup
           </Link>
         </div>

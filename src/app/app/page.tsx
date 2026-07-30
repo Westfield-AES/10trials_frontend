@@ -76,7 +76,7 @@ export default function DashboardPage() {
           {
             icon: BookOpen,
             label: t("sessionsUsed"),
-            value: `${account.data?.usage.sessions ?? 0}/${account.data?.entitlements.sessions_per_month ?? 5}`,
+            value: `${account.data?.usage.sessions ?? 0}/${account.data?.entitlements.sessions_per_month ?? 10}`,
             color: "bg-[#e8f3fa] text-[#07436c]",
           },
           {
@@ -116,12 +116,6 @@ export default function DashboardPage() {
           </article>
         ))}
       </div>
-      {history.isError && (
-        <div className="mt-6 rounded-xl bg-red-50 p-4 text-sm font-bold text-red-700" role="alert">
-          {history.error instanceof Error ? history.error.message : "Recent attempts could not be loaded."}{" "}
-          <button className="underline" onClick={() => history.refetch()}>Try again</button>
-        </div>
-      )}
       <section className="card mt-8 overflow-hidden">
         <div className="flex items-center justify-between border-b border-[#dce5eb] p-5">
           <div>
@@ -140,7 +134,17 @@ export default function DashboardPage() {
           </Link>
         </div>
         <div className="divide-y divide-[#dce5eb]">
-          {history.data?.sessions.length ? (
+          {history.isError ? (
+            <div className="p-8 text-center text-[#607282]">
+              <p>Recent attempts are temporarily unavailable.</p>
+              <button
+                className="mt-3 font-black text-[#e85b00]"
+                onClick={() => history.refetch()}
+              >
+                Try again
+              </button>
+            </div>
+          ) : history.data?.sessions.length ? (
             history.data.sessions.map((item) => (
               <Link
                 key={item.id}

@@ -8,25 +8,27 @@ import { apiRequest } from "@/lib/api";
 import type { WebSession } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/components/providers/i18n-provider";
+import { toast } from "@/lib/toast";
 
 export function ReportView({ session }: { session: WebSession }) {
   const { t } = useI18n();
   const report = session.report;
   const router = useRouter();
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
   if (!report) return null;
   async function retry() {
     setBusy(true);
-    setError("");
     try {
       const result = await apiRequest<{ job_id: string }>(
         `/api/v1/sessions/${session.id}/retry`,
-        { method: "POST" },
+        {
+          method: "POST",
+          toast: { success: "Retry session is being prepared." },
+        },
       );
       router.push(`/app/session?job=${result.job_id}`);
     } catch (nextError) {
-      setError(
+      toast.error(
         nextError instanceof Error
           ? nextError.message
           : "Could not start retry.",
@@ -161,14 +163,6 @@ export function ReportView({ session }: { session: WebSession }) {
             ))}
           </div>
         </section>
-      )}
-      {error && (
-        <p
-          role="alert"
-          className="mt-5 rounded-xl bg-red-50 p-4 font-bold text-red-700"
-        >
-          {error}
-        </p>
       )}
       <div className="mt-7 flex flex-col gap-3 sm:flex-row">
         {report.retry_recommended && (
