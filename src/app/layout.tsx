@@ -13,6 +13,16 @@ export const metadata: Metadata = {
   description:
     "AI-powered exam practice for any exam. Learn with instant feedback or simulate the real thing.",
   applicationName: "10Trials",
+  icons: {
+    icon: [
+      {
+        url: "/brand/10trials-logo.svg",
+        type: "image/svg+xml",
+      },
+    ],
+    shortcut: "/brand/10trials-logo.svg",
+    apple: "/icon-192.png",
+  },
   appleWebApp: { capable: true, statusBarStyle: "default", title: "10Trials" },
   formatDetection: { telephone: false },
   openGraph: {
