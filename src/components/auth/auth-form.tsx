@@ -2,8 +2,6 @@
 
 import {
   createUserWithEmailAndPassword,
-  sendEmailVerification,
-  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
   updateProfile,
@@ -15,6 +13,7 @@ import { useState } from "react";
 import { auth, googleProvider } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
+import { apiRequest, publicApiRequest } from "@/lib/api";
 import { firebaseErrorMessage } from "@/lib/firebase-errors";
 import { toast } from "@/lib/toast";
 
@@ -36,9 +35,13 @@ export function AuthForm({ mode }: { mode: Mode }) {
     setBusy(true);
     try {
       if (mode === "forgot") {
-        await sendPasswordResetEmail(auth, email);
+        await publicApiRequest("/auth/password-reset", {
+          method: "POST",
+          body: JSON.stringify({ email }),
+          toast: { error: false },
+        });
         toast.success(
-          "Password reset instructions are on their way. Check your inbox.",
+          "If an account exists for that email, reset instructions are on their way.",
         );
       } else if (mode === "signup") {
         if (!is13) throw new Error("AGE");
@@ -53,8 +56,19 @@ export function AuthForm({ mode }: { mode: Mode }) {
           "10trials-age",
           JSON.stringify({ under18, guardian }),
         );
-        await sendEmailVerification(credential.user);
-        toast.success("Account created. Check your email to verify it.");
+        try {
+          await apiRequest("/auth/email-verification", {
+            method: "POST",
+            toast: { error: false },
+          });
+          toast.success("Account created. Check your email to verify it.");
+        } catch (emailError) {
+          toast.error(
+            emailError instanceof Error
+              ? `Your account was created, but we couldn’t send the verification email. ${emailError.message}`
+              : "Your account was created, but we couldn’t send the verification email. Try sending another link.",
+          );
+        }
         router.push("/verify-email");
       } else {
         const credential = await signInWithEmailAndPassword(

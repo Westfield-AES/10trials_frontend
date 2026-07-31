@@ -1,17 +1,19 @@
 "use client";
 
-import { sendEmailVerification } from "firebase/auth";
 import { MailCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useAuth } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
+import { apiRequest } from "@/lib/api";
 import { firebaseErrorMessage } from "@/lib/firebase-errors";
 import { toast } from "@/lib/toast";
 
 export default function VerifyEmailPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const [resending, setResending] = useState(false);
   async function check() {
     if (!user) return;
     try {
@@ -52,24 +54,31 @@ export default function VerifyEmailPage() {
             I’ve verified my email
           </Button>
           <button
+            type="button"
             className="mt-4 text-sm font-bold text-[#07436c]"
+            disabled={!user || resending}
             onClick={async () => {
               if (user) {
+                setResending(true);
                 try {
-                  await sendEmailVerification(user);
+                  await apiRequest("/auth/email-verification", {
+                    method: "POST",
+                    toast: { error: false },
+                  });
                   toast.success("A fresh verification link has been sent.");
                 } catch (error) {
                   toast.error(
-                    firebaseErrorMessage(
-                      error,
-                      "Could not send a new verification link.",
-                    ),
+                    error instanceof Error
+                      ? error.message
+                      : "Could not send a new verification link.",
                   );
+                } finally {
+                  setResending(false);
                 }
               }
             }}
           >
-            Send another link
+            {resending ? "Sending…" : "Send another link"}
           </button>
         </section>
       </div>

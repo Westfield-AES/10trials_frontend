@@ -22,6 +22,10 @@ npm run dev
 Run the FastAPI service at `http://localhost:8000`, or update
 `NEXT_PUBLIC_API_URL`.
 
+Firebase authenticates users and validates secure action links. The frontend
+requests verification and password-reset email from the backend so all
+transactional delivery and branding is handled by Brevo.
+
 ## Verification
 
 ```bash
