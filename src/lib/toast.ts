@@ -31,7 +31,7 @@ function publish(
     id: `toast-${Date.now()}-${toastSequence++}`,
     message: normalizedMessage,
     variant,
-    durationMs: Math.max(1_500, options?.durationMs ?? 3_000),
+    durationMs: Math.max(1_500, options?.durationMs ?? 1_500),
   };
 
   if (listeners.size === 0) {
