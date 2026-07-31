@@ -6,12 +6,7 @@ import {
   PhoneAuthProvider,
   RecaptchaVerifier,
 } from "firebase/auth";
-import {
-  AlertTriangle,
-  MessageCircle,
-  ShieldCheck,
-  Trash2,
-} from "lucide-react";
+import { AlertTriangle, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { apiRequest } from "@/lib/api";
 import { auth } from "@/lib/firebase";
@@ -35,7 +30,7 @@ export default function SettingsPage() {
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [verificationId, setVerificationId] = useState("");
-  const [deleteType, setDeleteType] = useState<"soft" | "hard" | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [confirmation, setConfirmation] = useState("");
   const [busy, setBusy] = useState(false);
   const data = account.data;
@@ -141,22 +136,12 @@ export default function SettingsPage() {
     }
   }
   async function deleteAccount() {
-    if (!deleteType) return;
     setBusy(true);
     try {
-      const path =
-        deleteType === "soft"
-          ? "/api/v1/account/me/soft"
-          : "/api/v1/account/me/hard";
-      await apiRequest(path, {
+      await apiRequest("/api/v1/account/me/soft", {
         method: "DELETE",
         body: JSON.stringify({ confirmation }),
-        toast: {
-          success:
-            deleteType === "soft"
-              ? "Account deletion scheduled."
-              : "Account deleted.",
-        },
+        toast: { success: "Account deleted." },
       });
       await auth.signOut();
       window.location.href = "/";
@@ -209,62 +194,55 @@ export default function SettingsPage() {
         </Button>
       </section>
       <section className="card mt-6 p-6">
-        <div className="flex gap-4">
-          <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#e9f8f0] text-[#17885b]">
-            <MessageCircle />
-          </div>
-          <div className="flex-1">
-            <h2 className="text-xl font-black text-[#032e4d]">
-              Connect WhatsApp
-            </h2>
-            <p className="mt-1 text-sm leading-6 text-[#607282]">
-              Optional. Verify the number you use on WhatsApp so both interfaces
-              share this account, usage, and history.
-            </p>
-            {data?.user.phone_verified ? (
-              <p className="mt-4 font-black text-[#17885b]">
-                Connected: {data.user.phone}
-              </p>
-            ) : (
-              <div className="mt-5 max-w-md space-y-3">
+        <h2 className="text-xl font-black text-[#032e4d]">Connect WhatsApp</h2>
+        <p className="mt-1 text-sm leading-6 text-[#607282]">
+          Optional. Verify the number you use on WhatsApp so both interfaces
+          share this account, usage, and history.
+        </p>
+        {data?.user.phone_verified ? (
+          <p className="mt-4 font-black text-[#17885b]">
+            Connected: {data.user.phone}
+          </p>
+        ) : (
+          <div className="mt-5 max-w-md space-y-3">
+            <label>
+              <span className="field-label">Phone number</span>
+              <input
+                className="field"
+                placeholder="+234…"
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
+              />
+            </label>
+            {verificationId ? (
+              <>
                 <label>
-                  <span className="field-label">Phone number</span>
+                  <span className="field-label">Verification code</span>
                   <input
                     className="field"
-                    placeholder="+234…"
-                    value={phone}
-                    onChange={(event) => setPhone(event.target.value)}
+                    inputMode="numeric"
+                    value={code}
+                    onChange={(event) => setCode(event.target.value)}
                   />
                 </label>
-                {verificationId ? (
-                  <>
-                    <label>
-                      <span className="field-label">Verification code</span>
-                      <input
-                        className="field"
-                        inputMode="numeric"
-                        value={code}
-                        onChange={(event) => setCode(event.target.value)}
-                      />
-                    </label>
-                    <Button onClick={verifyCode} disabled={busy || !code}>
-                      Verify and connect
-                    </Button>
-                  </>
-                ) : (
-                  <Button
-                    variant="ghost"
-                    onClick={sendCode}
-                    disabled={busy || !phone}
-                  >
-                    Send code
-                  </Button>
-                )}
-                <div id="phone-recaptcha" />
+                <Button onClick={verifyCode} disabled={busy || !code}>
+                  Verify and connect
+                </Button>
+              </>
+            ) : (
+              <div className="pt-2">
+                <Button
+                  className="w-full sm:w-auto"
+                  onClick={sendCode}
+                  disabled={busy || !phone}
+                >
+                  Send code
+                </Button>
               </div>
             )}
+            <div id="phone-recaptcha" />
           </div>
-        </div>
+        )}
       </section>
       <section className="card mt-6 p-6">
         <h2 className="text-xl font-black text-[#032e4d]">Email preferences</h2>
@@ -284,62 +262,37 @@ export default function SettingsPage() {
         </label>
       </section>
       <section className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-6">
-        <div className="flex gap-4">
-          <Trash2 className="shrink-0 text-red-700" />
-          <div>
-            <h2 className="text-xl font-black text-red-900">
-              Account deletion
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-red-800">
-              Soft deletion gives you 30 days to restore the account. Hard
-              deletion permanently removes identifiable learning data while
-              retaining anonymous aggregates and required payment records.
-            </p>
-            <div className="mt-5 flex flex-wrap gap-3">
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  setDeleteType("soft");
-                  setConfirmation("");
-                }}
-              >
-                Schedule deletion
-              </Button>
-              <Button
-                variant="danger"
-                onClick={() => {
-                  setDeleteType("hard");
-                  setConfirmation("");
-                }}
-              >
-                Delete permanently
-              </Button>
-            </div>
-          </div>
+        <h2 className="text-xl font-black text-red-900">Account deletion</h2>
+        <p className="mt-2 text-sm leading-6 text-red-800">
+          Deleting your account signs you out and removes access to 10Trials.
+          You can restore it later if you change your mind.
+        </p>
+        <div className="mt-5">
+          <Button
+            variant="danger"
+            onClick={() => {
+              setDeleteOpen(true);
+              setConfirmation("");
+            }}
+          >
+            Delete account
+          </Button>
         </div>
       </section>
       <Modal
-        open={Boolean(deleteType)}
-        title={
-          deleteType === "hard"
-            ? "Permanently delete account?"
-            : "Schedule account deletion?"
-        }
-        onClose={() => setDeleteType(null)}
+        open={deleteOpen}
+        title="Delete account?"
+        onClose={() => setDeleteOpen(false)}
       >
         <div className="flex gap-3 rounded-xl bg-amber-50 p-4 text-amber-900">
           <AlertTriangle className="shrink-0" />
           <p className="text-sm leading-6">
-            This action requires a recent login.{" "}
-            {deleteType === "soft"
-              ? "You can restore within 30 days."
-              : "Permanent deletion cannot be undone."}
+            You’ll be signed out after confirming. You can restore your account
+            by signing in again.
           </p>
         </div>
         <label className="mt-5 block">
-          <span className="field-label">
-            Type {deleteType === "hard" ? "DELETE MY ACCOUNT" : "DELETE"}
-          </span>
+          <span className="field-label">Type DELETE to confirm</span>
           <input
             className="field"
             value={confirmation}
@@ -347,16 +300,12 @@ export default function SettingsPage() {
           />
         </label>
         <div className="mt-6 flex justify-end gap-3">
-          <Button variant="ghost" onClick={() => setDeleteType(null)}>
+          <Button variant="ghost" onClick={() => setDeleteOpen(false)}>
             Cancel
           </Button>
           <Button
             variant="danger"
-            disabled={
-              busy ||
-              confirmation !==
-                (deleteType === "hard" ? "DELETE MY ACCOUNT" : "DELETE")
-            }
+            disabled={busy || confirmation !== "DELETE"}
             onClick={deleteAccount}
           >
             Confirm deletion

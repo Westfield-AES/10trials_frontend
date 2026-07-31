@@ -327,10 +327,11 @@ export function QuestionPlayer({
               )}
             </div>
           )}
-          <div className="mt-7 flex flex-wrap justify-between gap-3">
+          <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-between">
             {session.config.mode === "simulate" ? (
               <>
                 <Button
+                  className="w-full sm:w-auto"
                   variant="ghost"
                   disabled={question.index === 1}
                   onClick={() => navigate(question.index - 1)}
@@ -339,6 +340,7 @@ export function QuestionPlayer({
                   {t("previous")}
                 </Button>
                 <Button
+                  className="w-full sm:w-auto"
                   onClick={async () => {
                     if (answer.trim() && answer !== existing?.user_answer) {
                       const saved = await saveAnswer();
@@ -359,6 +361,7 @@ export function QuestionPlayer({
               <>
                 {previousLearnQuestion && (
                   <Button
+                    className="w-full sm:w-auto"
                     variant="ghost"
                     disabled={busy}
                     onClick={() => navigate(previousLearnQuestion.index)}
@@ -369,7 +372,7 @@ export function QuestionPlayer({
                 )}
                 {nextLearnQuestion && (
                   <Button
-                    className="ml-auto"
+                    className="w-full sm:ml-auto sm:w-auto"
                     disabled={busy}
                     onClick={() => navigate(nextLearnQuestion.index)}
                   >
@@ -382,6 +385,7 @@ export function QuestionPlayer({
               <>
                 {previousLearnQuestion && (
                   <Button
+                    className="w-full sm:w-auto"
                     variant="ghost"
                     disabled={busy}
                     onClick={() => navigate(previousLearnQuestion.index)}
@@ -391,7 +395,7 @@ export function QuestionPlayer({
                   </Button>
                 )}
                 <Button
-                  className="ml-auto"
+                  className="w-full sm:ml-auto sm:w-auto"
                   onClick={() => saveAnswer()}
                   disabled={busy || !answer.trim()}
                 >

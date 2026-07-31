@@ -3,10 +3,7 @@ export function Progress({ value, label }: { value: number; label?: string }) {
   return (
     <div>
       {label && (
-        <div className="mb-2 flex justify-between text-xs font-bold">
-          <span>{label}</span>
-          <span>{safe}%</span>
-        </div>
+        <div className="mb-2 text-xs font-bold">{label}</div>
       )}
       <div
         className="h-2.5 overflow-hidden rounded-full bg-[#dcebf4]"

@@ -225,7 +225,7 @@ export default function NewSessionPage() {
               <p className="text-sm font-black text-[#032e4d]">
                 Choose syllabus topics
               </p>
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-4 grid gap-2 sm:flex sm:flex-wrap">
                 {discovery.common_topics.map((topic) => {
                   const selected = selectedTopics.includes(topic);
                   return (
@@ -240,10 +240,12 @@ export default function NewSessionPage() {
                             : [...items, topic],
                         )
                       }
-                      className={`rounded-full border px-3 py-2 text-sm font-bold ${selected ? "border-[#ff6b00] bg-[#fff0e5] text-[#b94700]" : "border-[#c8d5dd] bg-white text-[#526877]"}`}
+                      className={`flex w-full items-start gap-2 rounded-xl border px-4 py-3 text-left text-sm font-bold sm:w-auto sm:rounded-full sm:px-3 sm:py-2 ${selected ? "border-[#ff6b00] bg-[#fff0e5] text-[#b94700]" : "border-[#c8d5dd] bg-white text-[#526877]"}`}
                     >
-                      {selected && <Check className="mr-1 inline" size={14} />}
-                      {topic}
+                      {selected && (
+                        <Check className="mt-0.5 shrink-0" size={14} />
+                      )}
+                      <span>{topic}</span>
                     </button>
                   );
                 })}
