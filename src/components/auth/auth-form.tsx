@@ -216,10 +216,13 @@ export function AuthForm({ mode }: { mode: Mode }) {
                         <input
                           type="checkbox"
                           checked={guardian}
-                          onChange={(event) => setGuardian(event.target.checked)}
+                          onChange={(event) =>
+                            setGuardian(event.target.checked)
+                          }
                         />
                         <span>
-                          My parent or guardian has agreed to my use of 10Trials.
+                          My parent or guardian has agreed to my use of
+                          10Trials.
                         </span>
                       </label>
                     )}
@@ -283,7 +286,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
             {[
               ["4", "languages"],
               ["2", "study modes"],
-              ["10", "retry questions"],
+              ["5", "questions per free session"],
             ].map(([number, label]) => (
               <div
                 key={label}

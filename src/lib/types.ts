@@ -106,13 +106,12 @@ export interface AccountOverview {
   user: {
     id: string;
     email?: string;
-    phone?: string;
     display_name?: string;
     plan: "free" | "pro";
+    entitlement_tier: "free" | "trial" | "pro";
     status: string;
     preferred_language: Language;
     email_verified: boolean;
-    phone_verified: boolean;
     age_confirmed: boolean;
   };
   usage: { sessions: number; questions: number };
@@ -120,8 +119,14 @@ export interface AccountOverview {
     sessions_per_month: number;
     questions_per_month: number;
     max_questions_per_session: number;
+    question_options: number[];
     advanced_insights: boolean;
   };
+  subscription?: {
+    status?: string;
+    billing_period?: string;
+    trial_ends_at?: string;
+  } | null;
   active_session?: {
     id: string;
     status: SessionStatus;

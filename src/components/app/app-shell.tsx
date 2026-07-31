@@ -204,7 +204,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="mt-auto rounded-2xl bg-[#032e4d] p-4 text-white">
         <BookOpenCheck className="text-[#ff8a38]" />
         <p className="mt-3 text-sm font-black">
-          {overview.data?.user.plan === "pro" ? "Pro learner" : "Free plan"}
+          {overview.data?.user.entitlement_tier === "trial"
+            ? "Trial learner"
+            : overview.data?.user.entitlement_tier === "pro"
+              ? "Pro learner"
+              : "Free plan"}
         </p>
         <p className="mt-1 text-xs text-[#c7d8e4]">
           {overview.data?.usage.sessions ?? 0} of{" "}

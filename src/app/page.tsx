@@ -26,7 +26,7 @@ const features = [
   {
     icon: Target,
     title: "Attack weak areas",
-    body: "Every report finds the topics holding you back and turns them into ten focused retry questions.",
+    body: "Every report finds the topics holding you back and turns them into a focused retry session.",
   },
   {
     icon: Globe2,
@@ -75,8 +75,8 @@ export default function HomePage() {
                   required
                 </span>
                 <span className="flex items-center gap-2">
-                  <Check size={17} className="text-[#17885b]" /> 5 free sessions
-                  monthly
+                  <Check size={17} className="text-[#17885b]" /> 10 free
+                  sessions monthly
                 </span>
               </div>
             </div>
@@ -158,7 +158,7 @@ export default function HomePage() {
                 [
                   "03",
                   "Practise and improve",
-                  "Answer, review your report, and retry the weak areas with ten fresh questions.",
+                  "Answer, review your report, and retry the weak areas with a fresh focused session.",
                 ],
               ].map(([number, title, body]) => (
                 <article key={number} className="card p-7">
@@ -213,8 +213,8 @@ export default function HomePage() {
                   "Learn gives feedback after each answer. Simulate behaves like an exam: navigate freely, flag questions, and receive results after submission.",
                 ],
                 [
-                  "Can I use it without WhatsApp?",
-                  "Absolutely. The website is a complete standalone experience. Optional WhatsApp connection will arrive as a Pro feature later.",
+                  "Do I need to install an app?",
+                  "No. 10Trials runs entirely in your browser on desktop or mobile.",
                 ],
                 [
                   "Does closing the browser stop a timer?",

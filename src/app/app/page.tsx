@@ -101,7 +101,12 @@ export default function DashboardPage() {
           {
             icon: Flame,
             label: t("plan"),
-            value: account.data?.user.plan === "pro" ? "Pro" : "Free",
+            value:
+              account.data?.user.entitlement_tier === "trial"
+                ? "Trial"
+                : account.data?.user.entitlement_tier === "pro"
+                  ? "Pro"
+                  : "Free",
             color: "bg-[#f1eafe] text-[#6b46c1]",
           },
         ].map(({ icon: Icon, label, value, color }) => (
