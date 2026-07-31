@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { firebaseErrorMessage } from "@/lib/firebase-errors";
+import { CONSENT_POLICY_VERSION } from "@/lib/policy";
 import { toast } from "@/lib/toast";
 
 export default function SettingsPage() {
@@ -65,7 +66,7 @@ export default function SettingsPage() {
         body: JSON.stringify({
           consent_type: "study_reminders",
           granted: value,
-          policy_version: "v1-placeholder",
+          policy_version: CONSENT_POLICY_VERSION,
         }),
         toast: {
           success: value

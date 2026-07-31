@@ -1,0 +1,1 @@
+export const CONSENT_POLICY_VERSION = "2026-07-31";

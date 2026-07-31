@@ -1,8 +1,9 @@
 "use client";
 
-import posthog from "posthog-js";
 import { useEffect, useState } from "react";
 import { apiRequest } from "@/lib/api";
+import { disableAnalytics, enableAnalytics } from "@/lib/analytics";
+import { CONSENT_POLICY_VERSION } from "@/lib/policy";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/providers/auth-provider";
 import { toast } from "@/lib/toast";
@@ -16,13 +17,8 @@ export function CookieConsent() {
 
   useEffect(() => {
     const saved = localStorage.getItem("10trials-cookie-consent") as Consent;
-    if (saved === "accepted" && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
-      posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
-        api_host:
-          process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com",
-        person_profiles: "identified_only",
-      });
-    }
+    if (saved === "accepted") enableAnalytics();
+    else if (saved === "essential") disableAnalytics();
     const timer = window.setTimeout(() => {
       setConsent(saved);
       setReady(true);
@@ -33,13 +29,8 @@ export function CookieConsent() {
   async function choose(value: Exclude<Consent, null>) {
     localStorage.setItem("10trials-cookie-consent", value);
     setConsent(value);
-    if (value === "accepted" && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
-      posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
-        api_host:
-          process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com",
-        person_profiles: "identified_only",
-      });
-    }
+    if (value === "accepted") enableAnalytics();
+    else disableAnalytics();
     if (user) {
       try {
         await apiRequest("/api/v1/account/consents", {
@@ -47,7 +38,7 @@ export function CookieConsent() {
           body: JSON.stringify({
             consent_type: "cookies",
             granted: value === "accepted",
-            policy_version: "v1-placeholder",
+            policy_version: CONSENT_POLICY_VERSION,
           }),
         });
       } catch {
@@ -57,7 +48,9 @@ export function CookieConsent() {
     toast.success("Cookie preferences saved.");
   }
 
-  if (!ready || consent) return null;
+  if (!ready) return null;
+  if (consent) return null;
+
   return (
     <aside
       className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-3xl rounded-2xl border border-[#dce5eb] bg-white p-5 shadow-2xl"

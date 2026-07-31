@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { apiRequest } from "@/lib/api";
+import { CONSENT_POLICY_VERSION } from "@/lib/policy";
 import type { Language } from "@/lib/types";
 import { AuthGuard } from "@/components/providers/auth-guard";
 import { Button } from "@/components/ui/button";
@@ -48,7 +49,7 @@ function OnboardingForm() {
           is_13_or_older: is13,
           is_under_18: under18,
           guardian_consent: guardian,
-          policy_version: "v1-placeholder",
+          policy_version: CONSENT_POLICY_VERSION,
         }),
       });
       await apiRequest("/api/v1/account/me", {
