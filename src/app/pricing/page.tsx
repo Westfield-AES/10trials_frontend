@@ -29,8 +29,8 @@ export default function PricingPage() {
               body="A meaningful monthly allowance."
               features={[
                 "10 sessions per month",
-                "50 questions",
-                "10 questions per session",
+                "50 questions total",
+                "5 questions per session",
                 "Learn and Simulate",
                 "Reports and history",
               ]}
@@ -44,19 +44,18 @@ export default function PricingPage() {
               body="For consistent, ambitious practice."
               features={[
                 "30 sessions per month",
-                "300 questions",
-                "30 questions per session",
+                "Up to 300 questions",
+                "Choose 5 or 10 questions per session",
                 "Priority generation",
                 "Advanced insights",
-                "Future WhatsApp connection",
               ]}
               href="/signup"
-              action="Try Pro for 7 days"
+              action="Choose Pro"
             />
           </div>
           <p className="mx-auto mt-7 max-w-2xl text-center text-sm text-[#607282]">
-            Also available at $5/month and annual billing in NGN or USD. Failed
-            renewals receive a three-day grace period.
+            Pro is also available at $5/month and with annual billing in NGN or
+            USD. Failed renewals receive a three-day grace period.
           </p>
         </div>
       </main>

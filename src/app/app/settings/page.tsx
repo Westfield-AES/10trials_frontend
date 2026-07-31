@@ -1,11 +1,6 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  linkWithCredential,
-  PhoneAuthProvider,
-  RecaptchaVerifier,
-} from "firebase/auth";
 import { AlertTriangle, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { apiRequest } from "@/lib/api";
@@ -14,7 +9,6 @@ import type { AccountOverview, Language } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { useI18n } from "@/components/providers/i18n-provider";
-import { firebaseErrorMessage } from "@/lib/firebase-errors";
 import { CONSENT_POLICY_VERSION } from "@/lib/policy";
 import { toast } from "@/lib/toast";
 
@@ -28,9 +22,6 @@ export default function SettingsPage() {
   const [name, setName] = useState("");
   const [language, setLanguage] = useState<Language | "">("");
   const [reminders, setReminders] = useState(false);
-  const [phone, setPhone] = useState("");
-  const [code, setCode] = useState("");
-  const [verificationId, setVerificationId] = useState("");
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [confirmation, setConfirmation] = useState("");
   const [busy, setBusy] = useState(false);
@@ -81,59 +72,6 @@ export default function SettingsPage() {
           ? nextError.message
           : "Could not save reminder preferences.",
       );
-    }
-  }
-  async function sendCode() {
-    if (!phone.startsWith("+")) {
-      toast.error("Use international format, for example +2348012345678.");
-      return;
-    }
-    setBusy(true);
-    try {
-      const verifier = new RecaptchaVerifier(auth, "phone-recaptcha", {
-        size: "invisible",
-      });
-      const provider = new PhoneAuthProvider(auth);
-      const id = await provider.verifyPhoneNumber(phone, verifier);
-      setVerificationId(id);
-      toast.success("Verification code sent.");
-    } catch (nextError) {
-      toast.error(
-        firebaseErrorMessage(
-          nextError,
-          "Could not send the verification code.",
-        ),
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function verifyCode() {
-    if (!auth.currentUser) return;
-    setBusy(true);
-    try {
-      const credential = PhoneAuthProvider.credential(verificationId, code);
-      await linkWithCredential(auth.currentUser, credential);
-      await auth.currentUser.getIdToken(true);
-      await apiRequest("/api/v1/account/link-phone", {
-        method: "POST",
-        toast: {
-          success: "WhatsApp number connected to this account.",
-        },
-      });
-      await client.invalidateQueries({ queryKey: ["account"] });
-      setVerificationId("");
-    } catch (nextError) {
-      toast.error(
-        firebaseErrorMessage(
-          nextError,
-          nextError instanceof Error
-            ? nextError.message
-            : "Could not verify the number.",
-        ),
-      );
-    } finally {
-      setBusy(false);
     }
   }
   async function deleteAccount() {
@@ -193,57 +131,6 @@ export default function SettingsPage() {
         <Button className="mt-5" onClick={saveProfile} disabled={busy}>
           Save changes
         </Button>
-      </section>
-      <section className="card mt-6 p-6">
-        <h2 className="text-xl font-black text-[#032e4d]">Connect WhatsApp</h2>
-        <p className="mt-1 text-sm leading-6 text-[#607282]">
-          Optional. Verify the number you use on WhatsApp so both interfaces
-          share this account, usage, and history.
-        </p>
-        {data?.user.phone_verified ? (
-          <p className="mt-4 font-black text-[#17885b]">
-            Connected: {data.user.phone}
-          </p>
-        ) : (
-          <div className="mt-5 max-w-md space-y-3">
-            <label>
-              <span className="field-label">Phone number</span>
-              <input
-                className="field"
-                placeholder="+234…"
-                value={phone}
-                onChange={(event) => setPhone(event.target.value)}
-              />
-            </label>
-            {verificationId ? (
-              <>
-                <label>
-                  <span className="field-label">Verification code</span>
-                  <input
-                    className="field"
-                    inputMode="numeric"
-                    value={code}
-                    onChange={(event) => setCode(event.target.value)}
-                  />
-                </label>
-                <Button onClick={verifyCode} disabled={busy || !code}>
-                  Verify and connect
-                </Button>
-              </>
-            ) : (
-              <div className="pt-2">
-                <Button
-                  className="w-full sm:w-auto"
-                  onClick={sendCode}
-                  disabled={busy || !phone}
-                >
-                  Send code
-                </Button>
-              </div>
-            )}
-            <div id="phone-recaptcha" />
-          </div>
-        )}
       </section>
       <section className="card mt-6 p-6">
         <h2 className="text-xl font-black text-[#032e4d]">Email preferences</h2>

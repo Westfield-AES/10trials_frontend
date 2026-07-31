@@ -1,13 +1,12 @@
 # 10Trials Frontend
 
 Standalone, installable web interface for the 10Trials exam-preparation
-platform. It is a complete alternative to the WhatsApp interface while sharing
-accounts, monthly usage, subscriptions, and completed history.
+platform, including practice sessions, subscriptions, and completed history.
 
 ## Stack
 
 - Next.js 16 App Router, React 19, TypeScript, Tailwind CSS
-- Firebase Authentication (email/password, Google, optional phone linking)
+- Firebase Authentication (email/password and Google)
 - TanStack Query
 - PostHog (consent-gated) and Sentry (PII disabled)
 - Vercel deployment
@@ -22,6 +21,10 @@ npm run dev
 
 Run the FastAPI service at `http://localhost:8000`, or update
 `NEXT_PUBLIC_API_URL`.
+
+Firebase authenticates users and validates secure action links. The frontend
+requests verification and password-reset email from the backend so all
+transactional delivery and branding is handled by Brevo.
 
 ## Verification
 

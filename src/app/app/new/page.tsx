@@ -52,7 +52,7 @@ export default function NewSessionPage() {
   const [curriculumYear, setCurriculumYear] = useState("Current");
   const [difficulty, setDifficulty] = useState("intermediate");
   const [format, setFormat] = useState("mixed");
-  const [count, setCount] = useState(10);
+  const [count, setCount] = useState(5);
   const [mode, setMode] = useState<"learn" | "simulate">("learn");
   const [timer, setTimer] = useState(30);
   const [timed, setTimed] = useState(true);
@@ -145,8 +145,7 @@ export default function NewSessionPage() {
     }
   }
 
-  const maxQuestions =
-    account.data?.entitlements.max_questions_per_session ?? 10;
+  const questionOptions = account.data?.entitlements.question_options ?? [5];
   return (
     <div className="mx-auto max-w-4xl">
       <div className="mb-8">
@@ -328,12 +327,12 @@ export default function NewSessionPage() {
             </div>
             <fieldset className="mt-6">
               <legend className="field-label">{t("numberQuestions")}</legend>
-              <div className="grid grid-cols-4 gap-2">
-                {[5, 10, 20, 30].map((number) => (
+              <div className="grid grid-cols-2 gap-2">
+                {[5, 10].map((number) => (
                   <button
                     key={number}
                     type="button"
-                    disabled={number > maxQuestions}
+                    disabled={!questionOptions.includes(number)}
                     onClick={() => setCount(number)}
                     className={`rounded-xl border p-3 font-black disabled:cursor-not-allowed disabled:opacity-35 ${count === number ? "border-[#ff6b00] bg-[#fff0e5] text-[#b94700]" : "border-[#dce5eb]"}`}
                   >
@@ -341,10 +340,10 @@ export default function NewSessionPage() {
                   </button>
                 ))}
               </div>
-              {maxQuestions === 10 && (
+              {questionOptions.length === 1 && (
                 <p className="mt-2 text-xs text-[#607282]">
-                  Free sessions support up to 10 questions. Upgrade for 20 and
-                  30.
+                  Free sessions contain 5 questions. Upgrade to Pro to choose 5
+                  or 10.
                 </p>
               )}
             </fieldset>

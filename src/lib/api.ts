@@ -187,6 +187,72 @@ export async function apiRequest<T>(
   }
 }
 
+async function publicRequest<T>(path: string, init: RequestInit): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        ...init.headers,
+      },
+    });
+  } catch (cause) {
+    throw new ApiError(
+      "We couldn’t reach 10Trials. Check your connection and try again.",
+      0,
+      "NETWORK_ERROR",
+      cause,
+    );
+  }
+  if (!response.ok) {
+    const payload = (await response
+      .json()
+      .catch(() => null)) as ErrorResponse | null;
+    const error = payload?.error;
+    throw new ApiError(
+      responseErrorMessage(payload, response.status),
+      response.status,
+      stringValue(error?.code) || `HTTP_${response.status}`,
+      error?.details,
+      stringValue(error?.request_id) ||
+        response.headers.get("x-request-id") ||
+        undefined,
+    );
+  }
+  if (response.status === 204) return undefined as T;
+  try {
+    return (await response.json()) as T;
+  } catch (cause) {
+    throw new ApiError(
+      "10Trials returned an unexpected response. Please try again.",
+      502,
+      "INVALID_RESPONSE",
+      cause,
+      response.headers.get("x-request-id") || undefined,
+    );
+  }
+}
+
+export async function publicApiRequest<T>(
+  path: string,
+  init: ApiRequestInit = {},
+): Promise<T> {
+  const { toast: toastOptions, ...requestInit } = init;
+  try {
+    const result = await publicRequest<T>(path, requestInit);
+    if (toastOptions?.success) toast.success(toastOptions.success);
+    return result;
+  } catch (error) {
+    const shouldReport =
+      typeof toastOptions?.error === "function"
+        ? toastOptions.error(error)
+        : toastOptions?.error !== false;
+    if (shouldReport) reportApiError(error);
+    throw error;
+  }
+}
+
 function finishedJob<T>(job: Job<T>): Job<T> {
   if (job.status === "failed" || job.status === "cancelled") {
     throw new ApiError(

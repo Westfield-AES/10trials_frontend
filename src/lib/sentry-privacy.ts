@@ -25,7 +25,6 @@ const SENSITIVE_HEADERS = new Set([
   "referer",
   "set-cookie",
   "x-paystack-signature",
-  "x-twilio-signature",
 ]);
 
 export function safeTelemetryUrl(value: string) {

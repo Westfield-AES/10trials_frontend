@@ -18,7 +18,8 @@ export default function BillingPage() {
   const [currency, setCurrency] = useState<"NGN" | "USD">("NGN");
   const [annual, setAnnual] = useState(false);
   const [busy, setBusy] = useState(false);
-  const pro = account.data?.user.plan === "pro";
+  const trialing = account.data?.user.entitlement_tier === "trial";
+  const pro = account.data?.user.entitlement_tier === "pro";
   async function checkout() {
     setBusy(true);
     try {
@@ -40,24 +41,6 @@ export default function BillingPage() {
           ? nextError.message
           : "Could not open checkout.",
       );
-      setBusy(false);
-    }
-  }
-  async function trial() {
-    setBusy(true);
-    try {
-      await apiRequest("/api/v1/billing/trial", {
-        method: "POST",
-        toast: { success: "Your 7-day Pro trial has started." },
-      });
-      await account.refetch();
-    } catch (nextError) {
-      toast.error(
-        nextError instanceof Error
-          ? nextError.message
-          : "Could not start trial.",
-      );
-    } finally {
       setBusy(false);
     }
   }
@@ -130,7 +113,7 @@ export default function BillingPage() {
             {[
               "10 sessions every calendar month",
               "50 questions total",
-              "Up to 10 questions per session",
+              "5 questions per session",
               "Learn and Simulate modes",
               "Reports and shared history",
             ].map((item) => (
@@ -140,7 +123,7 @@ export default function BillingPage() {
               </li>
             ))}
           </ul>
-          {!pro && (
+          {!pro && !trialing && (
             <p className="mt-7 rounded-xl bg-[#f4f8fa] p-3 text-center text-sm font-black text-[#526877]">
               Your current plan
             </p>
@@ -163,11 +146,10 @@ export default function BillingPage() {
           <ul className="mt-6 space-y-3 text-sm">
             {[
               "30 sessions every calendar month",
-              "300 questions total",
-              "Up to 30 questions per session",
+              "Up to 300 questions total",
+              "Choose 5 or 10 questions per session",
               "Priority question generation",
               "Advanced progress insights",
-              "WhatsApp connection when released",
             ].map((item) => (
               <li key={item} className="flex gap-3">
                 <Check className="shrink-0 text-[#ff8a38]" size={18} />
@@ -186,16 +168,18 @@ export default function BillingPage() {
                 onClick={checkout}
                 disabled={busy}
               >
-                {busy ? "Please wait…" : "Choose Pro"}
+                {busy
+                  ? "Please wait…"
+                  : trialing
+                    ? "Keep Pro after trial"
+                    : "Choose Pro"}
               </Button>
-              <button
-                onClick={trial}
-                disabled={busy}
-                className="mt-3 w-full text-sm font-black text-[#ffb37b]"
-              >
-                <Sparkles className="mr-1 inline" size={16} />
-                Start one-time 7-day trial
-              </button>
+              {trialing && (
+                <p className="mt-3 text-center text-sm font-black text-[#ffb37b]">
+                  <Sparkles className="mr-1 inline" size={16} />
+                  Your 7-day trial includes 5 sessions and up to 50 questions.
+                </p>
+              )}
             </>
           )}
         </article>

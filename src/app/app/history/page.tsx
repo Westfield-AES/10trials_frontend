@@ -14,7 +14,6 @@ interface Item {
   mode: string;
   format: string;
   difficulty?: string;
-  channel: string;
   status: string;
   num_questions: number;
   percentage?: number;
@@ -59,7 +58,7 @@ export default function HistoryPage() {
         {t("history")}
       </h1>
       <p className="mt-2 text-[#607282]">
-        Web and WhatsApp reports live together under the same account.
+        Review completed practice sessions and revisit every report.
       </p>
       <section className="card mt-8 overflow-hidden">
         <div className="divide-y divide-[#dce5eb]">
@@ -82,8 +81,7 @@ export default function HistoryPage() {
                     )}
                   </div>
                   <p className="mt-1 text-xs font-bold uppercase tracking-wide text-[#607282]">
-                    {item.channel} · {item.mode} · {item.num_questions}{" "}
-                    questions
+                    {item.mode} · {item.num_questions} questions
                   </p>
                 </div>
                 <p className="text-sm text-[#607282]">
