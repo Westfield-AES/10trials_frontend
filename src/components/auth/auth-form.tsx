@@ -193,47 +193,51 @@ export function AuthForm({ mode }: { mode: Mode }) {
                 </label>
               )}
               {mode === "signup" && (
-                <div className="space-y-3 rounded-xl bg-[#f4f8fa] p-4 text-sm">
-                  <label className="flex gap-3">
-                    <input
-                      type="checkbox"
-                      checked={is13}
-                      onChange={(event) => setIs13(event.target.checked)}
-                    />
-                    <span>I confirm I am at least 13 years old.</span>
-                  </label>
-                  <label className="flex gap-3">
-                    <input
-                      type="checkbox"
-                      checked={under18}
-                      onChange={(event) => setUnder18(event.target.checked)}
-                    />
-                    <span>I am under 18.</span>
-                  </label>
-                  {under18 && (
+                <div className="pt-3">
+                  <div className="space-y-3 rounded-xl bg-[#f4f8fa] p-4 text-sm">
                     <label className="flex gap-3">
                       <input
                         type="checkbox"
-                        checked={guardian}
-                        onChange={(event) => setGuardian(event.target.checked)}
+                        checked={is13}
+                        onChange={(event) => setIs13(event.target.checked)}
                       />
-                      <span>
-                        My parent or guardian has agreed to my use of 10Trials.
-                      </span>
+                      <span>I confirm I am at least 13 years old.</span>
                     </label>
-                  )}
+                    <label className="flex gap-3">
+                      <input
+                        type="checkbox"
+                        checked={under18}
+                        onChange={(event) => setUnder18(event.target.checked)}
+                      />
+                      <span>I am under 18.</span>
+                    </label>
+                    {under18 && (
+                      <label className="flex gap-3">
+                        <input
+                          type="checkbox"
+                          checked={guardian}
+                          onChange={(event) => setGuardian(event.target.checked)}
+                        />
+                        <span>
+                          My parent or guardian has agreed to my use of 10Trials.
+                        </span>
+                      </label>
+                    )}
+                  </div>
                 </div>
               )}
-              <Button className="w-full" disabled={busy}>
-                {busy
-                  ? "Please wait…"
-                  : mode === "login"
-                    ? "Log in"
-                    : mode === "signup"
-                      ? "Create free account"
-                      : "Send reset link"}
-                <ArrowRight size={17} />
-              </Button>
+              <div className={mode === "login" ? "pt-3" : undefined}>
+                <Button className="w-full" disabled={busy}>
+                  {busy
+                    ? "Please wait…"
+                    : mode === "login"
+                      ? "Log in"
+                      : mode === "signup"
+                        ? "Create free account"
+                        : "Send reset link"}
+                  {mode === "forgot" && <ArrowRight size={17} />}
+                </Button>
+              </div>
             </form>
             <div className="mt-5 text-center text-sm text-[#607282]">
               {mode === "login" ? (

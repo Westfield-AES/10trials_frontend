@@ -113,12 +113,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <section className="card max-w-lg p-8 text-center">
           <h1 className="text-2xl font-black text-[#032e4d]">
             {restorable
-              ? "Your account is scheduled for deletion"
+              ? "Your account is deleted"
               : "This account is unavailable"}
           </h1>
           <p className="mt-3 leading-7 text-[#607282]">
             {restorable
-              ? "Restore it during the 30-day recovery period to continue learning."
+              ? "Restore your account to continue learning."
               : "Contact support if you believe this account status is incorrect."}
           </p>
           <div className="mt-6 flex justify-center gap-3">

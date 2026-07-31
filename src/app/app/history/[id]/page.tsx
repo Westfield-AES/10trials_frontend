@@ -17,8 +17,26 @@ interface StoredSession {
   num_questions: number;
   percentage?: number;
   score?: number;
-  report?: Report;
+  weak_areas?: unknown;
+  strong_areas?: unknown;
+  report?: unknown;
   completed_at?: string;
+}
+
+function storedJson(value: unknown) {
+  if (typeof value !== "string") return value;
+  try {
+    return JSON.parse(value) as unknown;
+  } catch {
+    return value;
+  }
+}
+
+function stringList(value: unknown) {
+  const parsed = storedJson(value);
+  return Array.isArray(parsed)
+    ? parsed.filter((item): item is string => typeof item === "string")
+    : [];
 }
 
 export default function HistoryDetailPage() {
@@ -52,8 +70,32 @@ export default function HistoryDetailPage() {
       </section>
     );
   const item = detail.data?.session;
-  const report = item?.report;
   if (!item) return <div className="card p-8">Report not found.</div>;
+  const storedReport = storedJson(item.report);
+  const report =
+    storedReport &&
+    typeof storedReport === "object" &&
+    !Array.isArray(storedReport)
+      ? (storedReport as Partial<Report>)
+      : null;
+  const topicBreakdown = Array.isArray(report?.topic_breakdown)
+    ? report.topic_breakdown.filter(
+        (topic): topic is Report["topic_breakdown"][number] =>
+          Boolean(topic && typeof topic.topic === "string"),
+      )
+    : [];
+  const weakAreas = stringList(report?.weak_areas ?? item.weak_areas);
+  const strongAreas = stringList(report?.strong_areas ?? item.strong_areas);
+  const wrongAnswers = Array.isArray(report?.wrong_answers_review)
+    ? report.wrong_answers_review.filter(
+        (entry): entry is Report["wrong_answers_review"][number] =>
+          Boolean(entry && typeof entry.question_index === "number"),
+      )
+    : [];
+  const motivationalNote =
+    typeof report?.motivational_note === "string"
+      ? report.motivational_note
+      : "";
   return (
     <div className="mx-auto max-w-5xl">
       <Link
@@ -87,45 +129,54 @@ export default function HistoryDetailPage() {
                 Topic performance
               </h2>
               <div className="mt-5 space-y-4">
-                {report.topic_breakdown.map((topic) => (
-                  <div key={topic.topic}>
-                    <div className="mb-2 flex justify-between text-sm font-bold">
-                      <span>{topic.topic}</span>
-                      <span>{topic.percentage}%</span>
+                {topicBreakdown.length ? (
+                  topicBreakdown.map((topic, index) => (
+                    <div key={`${topic.topic}-${index}`}>
+                      <div className="mb-2 flex justify-between text-sm font-bold">
+                        <span>{topic.topic}</span>
+                        <span>{Math.round(topic.percentage ?? 0)}%</span>
+                      </div>
+                      <div className="h-2 overflow-hidden rounded-full bg-[#dcebf4]">
+                        <div
+                          className="h-full rounded-full bg-[#ff6b00]"
+                          style={{
+                            width: `${Math.max(0, Math.min(100, topic.percentage ?? 0))}%`,
+                          }}
+                        />
+                      </div>
                     </div>
-                    <div className="h-2 rounded-full bg-[#dcebf4]">
-                      <div
-                        className="h-full rounded-full bg-[#ff6b00]"
-                        style={{ width: `${topic.percentage}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-sm leading-6 text-[#607282]">
+                    Topic-level results were not recorded for this session.
+                  </p>
+                )}
               </div>
             </section>
             <section className="card p-6">
               <h2 className="text-xl font-black text-[#032e4d]">Report note</h2>
               <p className="mt-4 leading-7 text-[#526877]">
-                {report.motivational_note}
+                {motivationalNote ||
+                  "A detailed report note was not recorded for this session."}
               </p>
               <h3 className="mt-6 text-xs font-black uppercase tracking-wider text-[#c94d00]">
                 Weak areas
               </h3>
               <p className="mt-2 text-sm">
-                {report.weak_areas.join(", ") || "None"}
+                {weakAreas.join(", ") || "None recorded"}
               </p>
               <h3 className="mt-5 text-xs font-black uppercase tracking-wider text-[#13734d]">
                 Strong areas
               </h3>
               <p className="mt-2 text-sm">
-                {report.strong_areas.join(", ") || "Still emerging"}
+                {strongAreas.join(", ") || "Still emerging"}
               </p>
             </section>
           </div>
-          {report.wrong_answers_review.length > 0 && (
+          {wrongAnswers.length > 0 && (
             <section className="card mt-6 p-6">
               <h2 className="text-xl font-black text-[#032e4d]">Review</h2>
-              {report.wrong_answers_review.map((entry) => (
+              {wrongAnswers.map((entry) => (
                 <details
                   key={entry.question_index}
                   className="border-b border-[#dce5eb] py-4"
