@@ -207,7 +207,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
                 </label>
               )}
               {mode === "signup" && (
-                <div className="pt-3">
+                <div className="space-y-3 pt-3">
                   <div className="space-y-3 rounded-xl bg-[#f4f8fa] p-4 text-sm">
                     <label className="flex gap-3">
                       <input
@@ -241,6 +241,17 @@ export function AuthForm({ mode }: { mode: Mode }) {
                       </label>
                     )}
                   </div>
+                  <p className="text-xs leading-5 text-[#607282]">
+                    By creating an account, you agree to our{" "}
+                    <Link href="/terms" className="font-bold text-[#07436c]">
+                      Terms of Use
+                    </Link>{" "}
+                    and acknowledge our{" "}
+                    <Link href="/privacy" className="font-bold text-[#07436c]">
+                      Privacy Policy
+                    </Link>
+                    .
+                  </p>
                 </div>
               )}
               <div className={mode === "login" ? "pt-3" : undefined}>

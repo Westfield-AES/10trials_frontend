@@ -8,8 +8,8 @@ export default function BillingCallbackPage() {
       <section className="card max-w-md p-8 text-center">
         <h1 className="text-3xl font-black text-[#032e4d]">Payment received</h1>
         <p className="mt-3 leading-7 text-[#607282]">
-          Paystack is confirming your subscription. Your plan will update as
-          soon as the secure webhook arrives.
+          Your payment is being confirmed. Your plan will update as soon as
+          confirmation arrives.
         </p>
         <Link
           href="/app/billing"

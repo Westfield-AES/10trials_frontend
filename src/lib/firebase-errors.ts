@@ -9,7 +9,7 @@ const messages: Record<string, string> = {
     "This sign-in has been disabled. Contact support if this is unexpected.",
   "auth/too-many-requests": "Too many attempts. Wait a moment and try again.",
   "auth/network-request-failed":
-    "Firebase could not be reached. Check your connection and try again.",
+    "The sign-in service could not be reached. Check your connection and try again.",
   "auth/popup-closed-by-user": "Google sign-in was closed before it finished.",
   "auth/popup-blocked":
     "Your browser blocked the Google sign-in window. Allow pop-ups and try again.",

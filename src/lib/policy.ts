@@ -1,1 +1,1 @@
-export const CONSENT_POLICY_VERSION = "2026-07-31";
+export const CONSENT_POLICY_VERSION = "2026-08-02";

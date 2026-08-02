@@ -186,7 +186,7 @@ export default function BillingPage() {
       </div>
       <p className="mt-6 text-xs leading-5 text-[#607282]">
         Paid access includes a three-day grace period after a failed renewal.
-        Paystack handles payment details securely; 10Trials does not store card
+        Payment details are handled securely; 10Trials does not store card
         numbers.
       </p>
     </div>

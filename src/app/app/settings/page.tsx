@@ -143,8 +143,8 @@ export default function SettingsPage() {
           <span>
             <strong>Study reminders</strong>
             <span className="mt-1 block text-sm text-[#607282]">
-              Occasional encouragement and reminders through Brevo. You can
-              unplug these anytime.
+              Occasional encouragement and study reminders. You can change this
+              choice at any time.
             </span>
           </span>
         </label>
