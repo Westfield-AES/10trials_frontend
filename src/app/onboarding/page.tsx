@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { apiRequest } from "@/lib/api";
@@ -141,8 +142,15 @@ function OnboardingForm() {
             {busy ? "Saving…" : "Enter my study space"}
           </Button>
           <p className="mt-5 text-xs leading-5 text-[#607282]">
-            Our legal pages are placeholders and will receive professional
-            review before launch.
+            By continuing, you agree to our{" "}
+            <Link href="/terms" className="font-bold text-[#07436c]">
+              Terms of Use
+            </Link>{" "}
+            and acknowledge our{" "}
+            <Link href="/privacy" className="font-bold text-[#07436c]">
+              Privacy Policy
+            </Link>
+            .
           </p>
         </section>
       </div>
