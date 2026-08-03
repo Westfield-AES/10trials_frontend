@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Clock3, Play, Sparkles } from "lucide-react";
+import { AlertTriangle, Clock3, FileSearch, Play } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { apiRequest, ApiError, waitForJob } from "@/lib/api";
@@ -88,7 +88,7 @@ export default function SessionPage() {
     return (
       <div className="mx-auto max-w-lg py-20 text-center">
         <div className="card p-9">
-          <Sparkles className="mx-auto text-[#ff6b00]" />
+          <FileSearch className="mx-auto text-[#e85b00]" />
           <h1 className="mt-4 text-3xl font-black text-[#032e4d]">
             No active session
           </h1>
@@ -161,7 +161,7 @@ export default function SessionPage() {
         <section className="card p-8 text-center sm:p-12">
           <div className="mx-auto grid size-16 place-items-center rounded-2xl bg-[#fff0e5] text-[#e85b00]">
             {current.status === "generating" ? (
-              <Sparkles size={30} />
+              <FileSearch size={30} />
             ) : (
               <Clock3 size={30} />
             )}

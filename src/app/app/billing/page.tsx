@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Check, Crown, ExternalLink, Sparkles } from "lucide-react";
+import { BadgeCheck, Check, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import { apiRequest } from "@/lib/api";
 import type { AccountOverview } from "@/lib/types";
@@ -129,9 +129,9 @@ export default function BillingPage() {
             </p>
           )}
         </article>
-        <article className="relative overflow-hidden rounded-[1.25rem] bg-[#032e4d] p-7 text-white shadow-xl">
+        <article className="relative overflow-hidden rounded-xl bg-[#032e4d] p-7 text-white shadow-sm">
           <div className="absolute right-5 top-5">
-            <Crown className="text-[#ff8a38]" />
+            <BadgeCheck className="text-[#ff8a38]" />
           </div>
           <p className="text-sm font-black text-[#ff9b52]">Pro</p>
           <p className="mt-2 text-4xl font-black">
@@ -176,7 +176,6 @@ export default function BillingPage() {
               </Button>
               {trialing && (
                 <p className="mt-3 text-center text-sm font-black text-[#ffb37b]">
-                  <Sparkles className="mr-1 inline" size={16} />
                   Your 7-day trial includes 5 sessions and up to 50 questions.
                 </p>
               )}

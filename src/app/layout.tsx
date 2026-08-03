@@ -7,11 +7,11 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
   ),
   title: {
-    default: "10Trials — Practise smarter. Perform stronger.",
+    default: "10Trials | Practise smarter. Perform stronger.",
     template: "%s | 10Trials",
   },
   description:
-    "AI-powered exam practice for any exam. Learn with instant feedback or simulate the real thing.",
+    "AI-powered practice for professional certifications, licensing, admissions, and advanced academic exams.",
   applicationName: "10Trials",
   icons: {
     icon: [
@@ -27,7 +27,8 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false },
   openGraph: {
     title: "10Trials",
-    description: "Turn any exam goal into focused practice.",
+    description:
+      "Focused practice for professional certifications and high-stakes exams.",
     type: "website",
   },
 };

@@ -1,7 +1,13 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, BookOpen, Flame, Target, Trophy } from "lucide-react";
+import {
+  ArrowRight,
+  BadgeCheck,
+  BarChart3,
+  ClipboardCheck,
+  Target,
+} from "lucide-react";
 import Link from "next/link";
 import { apiRequest } from "@/lib/api";
 import type { AccountOverview } from "@/lib/types";
@@ -34,10 +40,10 @@ export default function DashboardPage() {
     <div className="mx-auto max-w-6xl">
       <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
         <div>
-          <p className="eyebrow">Today’s a good day to improve</p>
+          <p className="eyebrow">Preparation overview</p>
           <h1 className="mt-2 text-4xl font-black tracking-[-0.04em] text-[#032e4d]">
             {t("welcome")},{" "}
-            {account.data?.user.display_name?.split(" ")[0] || "learner"}.
+            {account.data?.user.display_name?.split(" ")[0] || "candidate"}.
           </h1>
           <p className="mt-2 text-[#607282]">{t("welcomeBody")}</p>
         </div>
@@ -74,7 +80,7 @@ export default function DashboardPage() {
       <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
           {
-            icon: BookOpen,
+            icon: ClipboardCheck,
             label: t("sessionsUsed"),
             value: `${account.data?.usage.sessions ?? 0}/${account.data?.entitlements.sessions_per_month ?? 10}`,
             color: "bg-[#e8f3fa] text-[#07436c]",
@@ -86,7 +92,7 @@ export default function DashboardPage() {
             color: "bg-[#fff0e5] text-[#e85b00]",
           },
           {
-            icon: Trophy,
+            icon: BarChart3,
             label: t("bestScore"),
             value: formatPercent(
               Math.max(
@@ -99,7 +105,7 @@ export default function DashboardPage() {
             color: "bg-[#e9f8f0] text-[#17885b]",
           },
           {
-            icon: Flame,
+            icon: BadgeCheck,
             label: t("plan"),
             value:
               account.data?.user.entitlement_tier === "trial"
@@ -107,7 +113,7 @@ export default function DashboardPage() {
                 : account.data?.user.entitlement_tier === "pro"
                   ? "Pro"
                   : "Free",
-            color: "bg-[#f1eafe] text-[#6b46c1]",
+            color: "bg-[#edf3f6] text-[#07436c]",
           },
         ].map(({ icon: Icon, label, value, color }) => (
           <article key={label} className="card p-5">

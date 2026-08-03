@@ -5,8 +5,8 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  FilePlus2,
   Search,
-  Sparkles,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -33,6 +33,33 @@ const languages: Array<{ value: Language; label: string }> = [
   { value: "fr", label: "Français" },
   { value: "es", label: "Español" },
   { value: "pt", label: "Português" },
+];
+
+const examExamples = [
+  {
+    label: "AWS SAA-C03",
+    description: "AWS Certified Solutions Architect – Associate (SAA-C03)",
+  },
+  {
+    label: "PMP",
+    description: "Project Management Professional (PMP) certification exam",
+  },
+  {
+    label: "CFA Level I",
+    description: "CFA Program Level I exam",
+  },
+  {
+    label: "NCLEX-RN",
+    description: "NCLEX-RN licensure examination",
+  },
+  {
+    label: "GRE",
+    description: "GRE General Test",
+  },
+  {
+    label: "IELTS Academic",
+    description: "IELTS Academic test",
+  },
 ];
 
 export default function NewSessionPage() {
@@ -168,17 +195,39 @@ export default function NewSessionPage() {
               {t("examQuestion")}
             </h2>
             <p className="mt-2 text-[#607282]">
-              Use the full name if you know it, or describe it naturally.
+              Enter the full name when possible. Include the provider, level,
+              country, or exam code if it helps identify the exact exam.
             </p>
             <label className="mt-6 block">
-              <span className="field-label">Exam description</span>
+              <span className="field-label">Certification or exam</span>
               <textarea
                 className="field min-h-32 resize-y"
-                placeholder="e.g. The Nigerian bar final exam, or WAEC Chemistry"
+                placeholder="e.g. AWS Certified Solutions Architect – Associate (SAA-C03)"
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
               />
             </label>
+            <div className="mt-3" aria-labelledby="exam-examples-label">
+              <p
+                id="exam-examples-label"
+                className="text-xs font-extrabold uppercase tracking-wider text-[#607282]"
+              >
+                Common exam examples
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {examExamples.map((example) => (
+                  <button
+                    key={example.label}
+                    type="button"
+                    aria-pressed={description === example.description}
+                    onClick={() => setDescription(example.description)}
+                    className={`rounded-full border px-3 py-2 text-sm font-bold transition ${description === example.description ? "border-[#ff6b00] bg-[#fff0e5] text-[#b94700]" : "border-[#c8d5dd] bg-white text-[#526877] hover:border-[#9eb5c3]"}`}
+                  >
+                    {example.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <label className="mt-4 block">
               <span className="field-label">Language</span>
               <select
@@ -199,7 +248,7 @@ export default function NewSessionPage() {
               <div className="mt-6 rounded-xl bg-[#f4f8fa] p-4">
                 <Progress
                   value={progress}
-                  label="Researching the exam and syllabus"
+                  label="Researching the exam structure and topic outline"
                 />
               </div>
             )}
@@ -209,7 +258,7 @@ export default function NewSessionPage() {
               disabled={busy || description.trim().length < 2}
             >
               {busy ? t("identifying") : t("identify")}
-              <Sparkles size={17} />
+              <Search size={17} />
             </Button>
           </div>
         )}
@@ -222,7 +271,7 @@ export default function NewSessionPage() {
             <p className="mt-1 text-[#607282]">{discovery.governing_body}</p>
             <div className="mt-6 rounded-2xl bg-[#f4f8fa] p-5">
               <p className="text-sm font-black text-[#032e4d]">
-                Choose syllabus topics
+                Choose exam domains and topics
               </p>
               <div className="mt-4 grid gap-2 sm:flex sm:flex-wrap">
                 {discovery.common_topics.map((topic) => {
@@ -258,11 +307,11 @@ export default function NewSessionPage() {
                 className="field"
                 value={customTopic}
                 onChange={(event) => setCustomTopic(event.target.value)}
-                placeholder="Optional"
+                placeholder="e.g. a specific domain, task, or competency"
               />
             </label>
             <label className="mt-5 block">
-              <span className="field-label">Curriculum or exam year</span>
+              <span className="field-label">Exam version or year</span>
               <select
                 className="field"
                 value={curriculumYear}
@@ -426,7 +475,7 @@ export default function NewSessionPage() {
               </Button>
               <Button onClick={generate} disabled={busy}>
                 {busy ? "…" : t("generate")}
-                <Sparkles size={17} />
+                <FilePlus2 size={17} />
               </Button>
             </div>
           </div>

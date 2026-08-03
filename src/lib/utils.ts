@@ -13,7 +13,7 @@ export function formatDate(
   value: string | number | null | undefined,
   locale = "en",
 ) {
-  if (!value) return "—";
+  if (!value) return "N/A";
   const date =
     typeof value === "number" ? new Date(value * 1000) : new Date(value);
   return new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(date);
