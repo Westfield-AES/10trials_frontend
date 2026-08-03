@@ -308,23 +308,6 @@ export default function NewSessionPage() {
               {discovery.exam_name}
             </h2>
             <p className="mt-1 text-[#607282]">{discovery.governing_body}</p>
-            {!!discovery.assumptions?.length && (
-              <div className="mt-5 rounded-2xl border border-[#f0c28f] bg-[#fff8ef] p-5">
-                <p className="text-sm font-black text-[#7a3b00]">
-                  Details to review
-                </p>
-                <p className="mt-1 text-sm text-[#795b43]">
-                  These preparation details were inferred because an official
-                  public specification was not available. You can adjust the
-                  topics and format before generating questions.
-                </p>
-                <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-[#795b43]">
-                  {discovery.assumptions.map((assumption) => (
-                    <li key={assumption}>{assumption}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
             <div className="mt-6 rounded-2xl bg-[#f4f8fa] p-5">
               <p className="text-sm font-black text-[#032e4d]">
                 Choose exam domains and topics
