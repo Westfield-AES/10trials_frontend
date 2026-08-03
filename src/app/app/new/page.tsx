@@ -196,14 +196,13 @@ export default function NewSessionPage() {
               {t("examQuestion")}
             </h2>
             <p className="mt-2 text-[#607282]">
-              Describe it however you know it. A name, school, country, subject,
-              level, acronym, or informal description is enough to start.
+              Describe it however you know it. Enter the full name when possible. Include the provider or exam code if it helps identify the exact exam.
             </p>
             <label className="mt-6 block">
               <span className="field-label">Describe your exam</span>
               <textarea
                 className="field min-h-32 resize-y"
-                placeholder="e.g. FUOYE MSc entrance exam, the Nigerian bar finals, or WAEC Chemistry"
+                placeholder="e.g. AWS Certified Solutions Architect, IELTS Academic, Nigerian Bar Exam"
                 value={description}
                 onChange={(event) => {
                   setDescription(event.target.value);
