@@ -18,14 +18,19 @@ import { useI18n } from "@/components/providers/i18n-provider";
 import { toast } from "@/lib/toast";
 
 interface Discovery {
+  status?: "exact" | "provisional" | "unrecognized";
   found: boolean;
   exam_name: string;
   governing_body: string;
-  suggested_format: "objective" | "theory" | "essay" | "mixed";
+  suggested_format: "objective" | "theory" | "essay" | "mixed" | null;
   format_reason?: string;
   common_topics: string[];
   curriculum_years?: string[];
   clarification_needed?: string;
+  confidence?: "high" | "medium" | "low";
+  verified_facts?: string[];
+  assumptions?: string[];
+  missing_details?: string[];
 }
 
 const languages: Array<{ value: Language; label: string }> = [
@@ -33,33 +38,6 @@ const languages: Array<{ value: Language; label: string }> = [
   { value: "fr", label: "Français" },
   { value: "es", label: "Español" },
   { value: "pt", label: "Português" },
-];
-
-const examExamples = [
-  {
-    label: "AWS SAA-C03",
-    description: "AWS Certified Solutions Architect – Associate (SAA-C03)",
-  },
-  {
-    label: "PMP",
-    description: "Project Management Professional (PMP) certification exam",
-  },
-  {
-    label: "CFA Level I",
-    description: "CFA Program Level I exam",
-  },
-  {
-    label: "NCLEX-RN",
-    description: "NCLEX-RN licensure examination",
-  },
-  {
-    label: "GRE",
-    description: "GRE General Test",
-  },
-  {
-    label: "IELTS Academic",
-    description: "IELTS Academic test",
-  },
 ];
 
 export default function NewSessionPage() {
@@ -73,6 +51,9 @@ export default function NewSessionPage() {
   const [description, setDescription] = useState("");
   const [language, setLanguage] = useState<Language>("en");
   const [discovery, setDiscovery] = useState<Discovery | null>(null);
+  const [clarification, setClarification] = useState<Discovery | null>(null);
+  const [clarificationAnswer, setClarificationAnswer] = useState("");
+  const [resolutionInput, setResolutionInput] = useState("");
   const [progress, setProgress] = useState(0);
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [customTopic, setCustomTopic] = useState("");
@@ -86,14 +67,18 @@ export default function NewSessionPage() {
   const [target, setTarget] = useState(80);
   const [busy, setBusy] = useState(false);
 
-  async function identify() {
-    if (description.trim().length < 2) return;
+  async function resolveExam(input: string) {
+    if (input.length < 2) return;
+    setResolutionInput(input);
     setBusy(true);
     setProgress(5);
     try {
       const created = await apiRequest<{ job_id: string }>(
         "/api/v1/exams/discover",
-        { method: "POST", body: JSON.stringify({ description, language }) },
+        {
+          method: "POST",
+          body: JSON.stringify({ description: input, language }),
+        },
       );
       const job = await waitForJob<{ exam: Discovery }>(
         created.job_id,
@@ -101,15 +86,16 @@ export default function NewSessionPage() {
       );
       if (job.status !== "succeeded" || !job.result?.exam)
         throw new Error(job.error_message || "Could not identify that exam.");
-      if (!job.result.exam.found) {
-        toast.error(
-          job.result.exam.clarification_needed ||
-            "Add the country or governing body and try again.",
-        );
+      const result = job.result.exam;
+      const status = result.status ?? (result.found ? "exact" : "unrecognized");
+      if (status !== "exact") {
+        setClarification(result);
+        setClarificationAnswer("");
         return;
       }
-      const found = job.result.exam;
+      const found = result;
       setDiscovery(found);
+      setClarification(null);
       setSelectedTopics(found.common_topics || []);
       setFormat(found.suggested_format || "mixed");
       setCurriculumYear(found.curriculum_years?.[0] || "Current");
@@ -126,6 +112,21 @@ export default function NewSessionPage() {
     }
   }
 
+  function identify() {
+    void resolveExam(description.trim());
+  }
+
+  function refineIdentification() {
+    const answer = clarificationAnswer.trim();
+    if (!answer || !clarification) return;
+    const refinedInput = [
+      resolutionInput || description.trim(),
+      `Clarification requested: ${clarification.clarification_needed}`,
+      `Learner's additional detail: ${answer}`,
+    ].join("\n");
+    void resolveExam(refinedInput);
+  }
+
   async function generate() {
     if (!discovery) return;
     setBusy(true);
@@ -136,10 +137,10 @@ export default function NewSessionPage() {
           method: "POST",
           body: JSON.stringify({
             exam: {
-              raw_input: description,
+              raw_input: resolutionInput || description,
               confirmed_name: discovery.exam_name,
               governing_body: discovery.governing_body,
-              suggested_format: discovery.suggested_format,
+              suggested_format: discovery.suggested_format || "mixed",
               topics: discovery.common_topics,
             },
             language,
@@ -195,47 +196,31 @@ export default function NewSessionPage() {
               {t("examQuestion")}
             </h2>
             <p className="mt-2 text-[#607282]">
-              Enter the full name when possible. Include the provider, level,
-              country, or exam code if it helps identify the exact exam.
+              Describe it however you know it. Enter the full name when possible. Include the provider or exam code if it helps identify the exact exam.
             </p>
             <label className="mt-6 block">
-              <span className="field-label">Certification or exam</span>
+              <span className="field-label">Describe your exam</span>
               <textarea
                 className="field min-h-32 resize-y"
-                placeholder="e.g. AWS Certified Solutions Architect, IELTS Academic, GRE General Test"
+                placeholder="e.g. AWS Certified Solutions Architect, IELTS Academic, Nigerian Bar Exam"
                 value={description}
-                onChange={(event) => setDescription(event.target.value)}
+                onChange={(event) => {
+                  setDescription(event.target.value);
+                  setClarification(null);
+                  setResolutionInput("");
+                }}
               />
             </label>
-            {/* <div className="mt-3" aria-labelledby="exam-examples-label">
-              <p
-                id="exam-examples-label"
-                className="text-xs font-extrabold uppercase tracking-wider text-[#607282]"
-              >
-                Common exam examples
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {examExamples.map((example) => (
-                  <button
-                    key={example.label}
-                    type="button"
-                    aria-pressed={description === example.description}
-                    onClick={() => setDescription(example.description)}
-                    className={`rounded-full border px-3 py-2 text-sm font-bold transition ${description === example.description ? "border-[#ff6b00] bg-[#fff0e5] text-[#b94700]" : "border-[#c8d5dd] bg-white text-[#526877] hover:border-[#9eb5c3]"}`}
-                  >
-                    {example.label}
-                  </button>
-                ))}
-              </div>
-            </div> */}
             <label className="mt-4 block">
               <span className="field-label">Language</span>
               <select
                 className="field"
                 value={language}
-                onChange={(event) =>
-                  setLanguage(event.target.value as Language)
-                }
+                onChange={(event) => {
+                  setLanguage(event.target.value as Language);
+                  setClarification(null);
+                  setResolutionInput("");
+                }}
               >
                 {languages.map((item) => (
                   <option key={item.value} value={item.value}>
@@ -252,14 +237,68 @@ export default function NewSessionPage() {
                 />
               </div>
             )}
-            <Button
-              className="mt-6"
-              onClick={identify}
-              disabled={busy || description.trim().length < 2}
-            >
-              {busy ? t("identifying") : t("identify")}
-              <Search size={17} />
-            </Button>
+            {clarification && !busy && (
+              <div
+                className="mt-6 rounded-2xl border border-[#b8d5e5] bg-[#f4f8fa] p-5"
+                aria-live="polite"
+              >
+                <p className="text-sm font-black text-[#032e4d]">
+                  {clarification.status === "provisional"
+                    ? "I found the exam context"
+                    : "I need one more detail"}
+                </p>
+                {clarification.exam_name && (
+                  <p className="mt-1 text-sm text-[#607282]">
+                    {clarification.exam_name}
+                    {clarification.governing_body
+                      ? ` · ${clarification.governing_body}`
+                      : ""}
+                  </p>
+                )}
+                <p className="mt-4 font-bold text-[#032e4d]">
+                  {clarification.clarification_needed ||
+                    "What country, provider, subject, or level is this exam for?"}
+                </p>
+                <label className="mt-3 block">
+                  <span className="field-label">Your answer</span>
+                  <input
+                    className="field"
+                    value={clarificationAnswer}
+                    onChange={(event) =>
+                      setClarificationAnswer(event.target.value)
+                    }
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") refineIdentification();
+                    }}
+                    placeholder="Add the missing detail"
+                    autoFocus
+                  />
+                </label>
+                <Button
+                  className="mt-4"
+                  variant="secondary"
+                  onClick={refineIdentification}
+                  disabled={!clarificationAnswer.trim()}
+                >
+                  Continue identifying
+                  <Search size={17} />
+                </Button>
+                <p className="mt-3 text-xs text-[#607282]">
+                  Your original description is kept; this only adds the detail
+                  needed to make the practice questions relevant.
+                </p>
+              </div>
+            )}
+            {!clarification && (
+              <Button
+                className="mt-6"
+                onClick={identify}
+                disabled={busy || description.trim().length < 2}
+              >
+                {busy ? t("identifying") : t("identify")}
+                <Search size={17} />
+              </Button>
+            )}
           </div>
         )}
         {step === 2 && discovery && (
@@ -269,6 +308,23 @@ export default function NewSessionPage() {
               {discovery.exam_name}
             </h2>
             <p className="mt-1 text-[#607282]">{discovery.governing_body}</p>
+            {!!discovery.assumptions?.length && (
+              <div className="mt-5 rounded-2xl border border-[#f0c28f] bg-[#fff8ef] p-5">
+                <p className="text-sm font-black text-[#7a3b00]">
+                  Details to review
+                </p>
+                <p className="mt-1 text-sm text-[#795b43]">
+                  These preparation details were inferred because an official
+                  public specification was not available. You can adjust the
+                  topics and format before generating questions.
+                </p>
+                <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-[#795b43]">
+                  {discovery.assumptions.map((assumption) => (
+                    <li key={assumption}>{assumption}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <div className="mt-6 rounded-2xl bg-[#f4f8fa] p-5">
               <p className="text-sm font-black text-[#032e4d]">
                 Choose exam domains and topics
