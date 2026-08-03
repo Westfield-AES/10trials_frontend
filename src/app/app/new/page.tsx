@@ -202,12 +202,12 @@ export default function NewSessionPage() {
               <span className="field-label">Certification or exam</span>
               <textarea
                 className="field min-h-32 resize-y"
-                placeholder="e.g. AWS Certified Solutions Architect – Associate (SAA-C03)"
+                placeholder="e.g. AWS Certified Solutions Architect, IELTS Academic, GRE General Test"
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
               />
             </label>
-            <div className="mt-3" aria-labelledby="exam-examples-label">
+            {/* <div className="mt-3" aria-labelledby="exam-examples-label">
               <p
                 id="exam-examples-label"
                 className="text-xs font-extrabold uppercase tracking-wider text-[#607282]"
@@ -227,7 +227,7 @@ export default function NewSessionPage() {
                   </button>
                 ))}
               </div>
-            </div>
+            </div> */}
             <label className="mt-4 block">
               <span className="field-label">Language</span>
               <select
