@@ -112,19 +112,19 @@ export function AuthForm({ mode }: { mode: Mode }) {
     mode === "login"
       ? "Welcome back"
       : mode === "signup"
-        ? "Build your next win"
+        ? "Prepare for your next exam"
         : "Reset your password";
   const subtitle =
     mode === "login"
       ? "Pick up where you left off."
       : mode === "signup"
-        ? "Your first ten sessions each month are free."
+        ? "Create an account to build focused practice sessions."
         : "We’ll email you a secure reset link.";
 
   return (
     <main
       id="main-content"
-      className="grid min-h-screen bg-[#fffaf5] lg:grid-cols-[.9fr_1.1fr]"
+      className="grid min-h-screen bg-[#f7f9fb] lg:grid-cols-[.9fr_1.1fr]"
     >
       <section className="flex items-center justify-center p-5 sm:p-10">
         <div className="w-full max-w-md">
@@ -300,9 +300,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
         </div>
       </section>
       <aside className="relative hidden overflow-hidden bg-[#032e4d] p-14 text-white lg:flex lg:flex-col lg:justify-center">
-        <div className="grid-dots absolute inset-0 opacity-20" />
         <div className="relative max-w-lg">
-          <p className="eyebrow text-[#ff9b52]">Designed for momentum</p>
+          <p className="eyebrow text-[#ff9b52]">Practice with purpose</p>
           <blockquote className="mt-5 text-4xl font-black leading-tight tracking-[-0.04em]">
             “I don’t need another pile of notes. I need to know what to practise
             next.”
@@ -310,7 +309,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           <div className="mt-10 grid grid-cols-3 gap-3">
             {[
               ["4", "languages"],
-              ["2", "study modes"],
+              ["2", "practice modes"],
               ["5", "questions per free session"],
             ].map(([number, label]) => (
               <div

@@ -33,11 +33,11 @@ export function SiteHeader() {
           >
             FAQ
           </Link>
-          <Link className="text-sm font-extrabold text-[#032e4d]" href="/login">
+          <Link className="text-sm font-bold text-[#032e4d]" href="/login">
             Log in
           </Link>
           <Link
-            className="rounded-xl bg-[#ff6b00] px-5 py-3 text-sm font-extrabold text-white shadow-[0_8px_20px_rgba(232,91,0,.2)] hover:bg-[#e85b00]"
+            className="rounded-xl bg-[#e85b00] px-5 py-3 text-sm font-bold text-white hover:bg-[#c94d00]"
             href="/signup"
           >
             Start practising

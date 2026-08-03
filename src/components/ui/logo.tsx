@@ -23,7 +23,7 @@ export function Logo({
         priority
         className="size-11 object-contain"
       />
-      <span className="-ml-1 text-xl font-black tracking-[-0.04em] text-[#032e4d]">
+      <span className="-ml-1 text-xl font-bold tracking-[-0.02em] text-[#032e4d]">
         10Trials
       </span>
     </Link>

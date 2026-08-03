@@ -105,7 +105,7 @@ export default function HistoryDetailPage() {
         <ChevronLeft size={17} />
         Back to history
       </Link>
-      <section className="mt-5 rounded-[1.75rem] bg-[#032e4d] p-7 text-white sm:p-10">
+      <section className="mt-5 rounded-xl bg-[#032e4d] p-7 text-white sm:p-10">
         <p className="text-xs font-extrabold uppercase tracking-wider text-[#ff9b52]">
           Completed report
         </p>

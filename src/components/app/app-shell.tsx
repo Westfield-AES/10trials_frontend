@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { signOut } from "firebase/auth";
 import {
-  BookOpenCheck,
+  CircleGauge,
   CreditCard,
   History,
   LayoutDashboard,
@@ -179,7 +179,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <X />
         </button>
       </div>
-      <nav className="space-y-1" aria-label="Study navigation">
+      <nav className="space-y-1" aria-label="Application navigation">
         {links.map(({ href, label, icon: Icon }) => {
           const active =
             href === "/app" ? pathname === href : pathname.startsWith(href);
@@ -202,12 +202,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         })}
       </nav>
       <div className="mt-auto rounded-2xl bg-[#032e4d] p-4 text-white">
-        <BookOpenCheck className="text-[#ff8a38]" />
+        <CircleGauge className="text-[#ff8a38]" />
         <p className="mt-3 text-sm font-black">
           {overview.data?.user.entitlement_tier === "trial"
-            ? "Trial learner"
+            ? "Trial plan"
             : overview.data?.user.entitlement_tier === "pro"
-              ? "Pro learner"
+              ? "Pro plan"
               : "Free plan"}
         </p>
         <p className="mt-1 text-xs text-[#c7d8e4]">
@@ -268,7 +268,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </button>
         <div className="ml-auto text-right">
           <p className="text-sm font-black text-[#032e4d]">
-            {overview.data?.user.display_name || "Learner"}
+            {overview.data?.user.display_name || "Candidate"}
           </p>
           <p className="text-xs text-[#607282]">{overview.data?.user.email}</p>
         </div>

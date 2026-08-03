@@ -38,12 +38,12 @@ export function ReportView({ session }: { session: WebSession }) {
   }
   return (
     <div className="mx-auto max-w-5xl">
-      <section className="overflow-hidden rounded-[1.75rem] bg-[#032e4d] p-6 text-white sm:p-10">
+      <section className="overflow-hidden rounded-xl bg-[#032e4d] p-6 text-white sm:p-10">
         <div className="grid items-center gap-8 md:grid-cols-[auto_1fr]">
-          <div className="grid size-40 place-items-center rounded-full border-[12px] border-[#ff6b00] bg-white text-[#032e4d]">
-            <div className="text-center">
+          <div className="min-w-40 border-l-4 border-[#ff6b00] bg-white/8 px-6 py-5 text-white">
+            <div>
               <p className="text-4xl font-black">{report.percentage}%</p>
-              <p className="text-xs font-extrabold uppercase tracking-wider">
+              <p className="mt-1 text-xs font-extrabold uppercase tracking-wider text-[#c7d8e4]">
                 {report.performance_label}
               </p>
             </div>
@@ -131,7 +131,7 @@ export function ReportView({ session }: { session: WebSession }) {
                 ))
               ) : (
                 <span className="text-sm text-[#607282]">
-                  Keep building—strong areas will appear here.
+                  Keep building. Strong areas will appear here.
                 </span>
               )}
             </div>

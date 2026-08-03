@@ -8,8 +8,8 @@ export function SiteFooter() {
         <div>
           <Logo />
           <p className="mt-3 max-w-sm text-sm leading-6 text-[#607282]">
-            Focused practice, useful feedback, and realistic simulations for
-            whatever exam comes next.
+            Focused preparation, precise feedback, and realistic simulations for
+            professional credentials and high-stakes exams.
           </p>
         </div>
         <div>
@@ -29,7 +29,7 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="container-shell mt-10 border-t border-[#dce5eb] pt-6 text-xs text-[#607282]">
-        © {new Date().getFullYear()} 10Trials. Built for better attempts.
+        © {new Date().getFullYear()} 10Trials. Built for focused preparation.
       </div>
     </footer>
   );

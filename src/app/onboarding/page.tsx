@@ -139,7 +139,7 @@ function OnboardingForm() {
             onClick={finish}
             disabled={busy}
           >
-            {busy ? "Saving…" : "Enter my study space"}
+            {busy ? "Saving…" : "Open my dashboard"}
           </Button>
           <p className="mt-5 text-xs leading-5 text-[#607282]">
             By continuing, you agree to our{" "}

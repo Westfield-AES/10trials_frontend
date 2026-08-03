@@ -18,7 +18,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   if (loading || !user) {
     return (
       <div className="grid min-h-screen place-items-center bg-[#fffaf5]">
-        <Spinner label="Opening your study space" />
+        <Spinner label="Opening your dashboard" />
       </div>
     );
   }
