@@ -3,6 +3,10 @@
 Standalone, installable web interface for the 10Trials exam-preparation
 platform, including practice sessions, subscriptions, and completed history.
 
+Learners can enter an official exam name or describe it naturally. Exact
+matches proceed to editable topics; partial matches keep the recognized context
+and ask one inline clarification instead of showing an error.
+
 ## Stack
 
 - Next.js 16 App Router, React 19, TypeScript, Tailwind CSS
