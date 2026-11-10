@@ -91,6 +91,9 @@ export function QuestionPlayer({
   );
   const [answer, setAnswer] = useState(existing?.user_answer ?? "");
   const [busy, setBusy] = useState(false);
+  const [pendingQuestionIndex, setPendingQuestionIndex] = useState<
+    number | null
+  >(null);
   const [pendingAnswer, setPendingAnswer] = useState<number | null>(null);
   const [confirmSubmit, setConfirmSubmit] = useState(false);
   const [feedback, setFeedback] = useState<{
@@ -159,6 +162,7 @@ export function QuestionPlayer({
     }
   }, [question?.index, feedback, existing, session.feedback]);
   if (!question) return null;
+  const isLastQuestion = question.index === session.questions.length;
 
   async function saveAnswer(value = answer) {
     if (!value.trim()) return false;
@@ -198,7 +202,7 @@ export function QuestionPlayer({
           setReviewedQuestionIndex(submittedQuestionIndex);
         }
       }
-      await onRefresh();
+      if (result.job_id || !result.session) await onRefresh();
       toast.success(
         session.config.mode === "learn" ? "Answer graded." : "Answer saved.",
       );
@@ -233,12 +237,25 @@ export function QuestionPlayer({
       return;
     }
     scrollToQuestionIndex.current = index;
+    setPendingQuestionIndex(index);
+    setBusy(true);
     try {
-      await apiRequest(`/api/v1/sessions/${session.id}/navigate`, {
-        method: "POST",
-        body: JSON.stringify({ question_index: index }),
-      });
-      await onRefresh();
+      const result = await apiRequest<{ current_question_index: number }>(
+        `/api/v1/sessions/${session.id}/navigate`,
+        {
+          method: "POST",
+          body: JSON.stringify({ question_index: index }),
+        },
+      );
+      await client.cancelQueries({ queryKey: ["active-session"] });
+      client.setQueryData<WebSession>(["active-session"], (previous) =>
+        previous?.id === session.id
+          ? {
+              ...previous,
+              current_question_index: result.current_question_index,
+            }
+          : previous,
+      );
     } catch (nextError) {
       scrollToQuestionIndex.current = null;
       toast.error(
@@ -246,6 +263,9 @@ export function QuestionPlayer({
           ? nextError.message
           : "Could not change questions.",
       );
+    } finally {
+      setPendingQuestionIndex(null);
+      setBusy(false);
     }
   }
   async function flag() {
@@ -451,7 +471,7 @@ export function QuestionPlayer({
                 : "Saving your answer…"}
             </p>
           )}
-          <div className="question-actions sticky z-10 -mx-2 mt-7 flex flex-col gap-3 rounded-2xl border border-[#dce5eb]/70 bg-white/95 p-2 shadow-[0_4px_20px_rgba(3,46,77,0.06)] backdrop-blur sm:static sm:mx-0 sm:flex-row sm:flex-wrap sm:justify-between sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
+          <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-between">
             {session.config.mode === "simulate" ? (
               <>
                 <Button
@@ -470,17 +490,23 @@ export function QuestionPlayer({
                       const saved = await saveAnswer();
                       if (!saved) return;
                     }
-                    if (question.index < session.questions.length)
-                      await navigate(question.index + 1);
+                    if (isLastQuestion) setConfirmSubmit(true);
+                    else await navigate(question.index + 1);
                   }}
                   disabled={busy}
                 >
                   {busy
-                    ? "Saving…"
-                    : question.index === session.questions.length
-                      ? t("saveAnswer")
+                    ? pendingQuestionIndex !== null
+                      ? "Loading…"
+                      : "Saving…"
+                    : isLastQuestion
+                      ? t("submitExam")
                       : t("saveNext")}
-                  <ChevronRight size={17} />
+                  {isLastQuestion ? (
+                    <Send size={17} />
+                  ) : (
+                    <ChevronRight size={17} />
+                  )}
                 </Button>
               </>
             ) : existing ? (
@@ -544,37 +570,43 @@ export function QuestionPlayer({
         </section>
         <aside className="card h-fit p-5">
           <h2 className="font-black text-[#032e4d]">{t("questionMap")}</h2>
+          <p role="status" className="sr-only">
+            {pendingQuestionIndex !== null &&
+              `Loading question ${pendingQuestionIndex}…`}
+          </p>
           <div className="mt-4 grid grid-cols-5 gap-2">
-            {session.questions.map((item) => (
-              <button
-                key={item.index}
-                disabled={
-                  busy ||
-                  (session.config.mode === "learn" &&
-                    !answered.has(item.index) &&
-                    item.index !== activeQuestion?.index)
-                }
-                onClick={() => navigate(item.index)}
-                aria-current={
-                  item.index === question.index ? "step" : undefined
-                }
-                aria-label={`Question ${item.index}${answered.has(item.index) ? ", answered" : ""}${item.index === activeQuestion?.index ? ", current" : ""}`}
-                className={`grid min-h-11 aspect-square place-items-center rounded-xl text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-45 ${item.index === question.index ? "bg-[#032e4d] text-white" : answered.has(item.index) ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200" : item.index === activeQuestion?.index && session.config.mode === "learn" ? "bg-[#fff0e5] text-[#b94700] ring-2 ring-[#ff9b52]" : session.flagged_question_indices.includes(item.index) ? "bg-amber-100 text-amber-800" : "bg-[#f1f5f7] text-[#526877]"}`}
-              >
-                {item.index}
-              </button>
-            ))}
+            {session.questions.map((item) => {
+              const loading = pendingQuestionIndex === item.index;
+              return (
+                <button
+                  key={item.index}
+                  disabled={
+                    busy ||
+                    (session.config.mode === "learn" &&
+                      !answered.has(item.index) &&
+                      item.index !== activeQuestion?.index)
+                  }
+                  onClick={() => navigate(item.index)}
+                  aria-current={
+                    item.index === question.index ? "step" : undefined
+                  }
+                  aria-busy={loading}
+                  aria-label={`Question ${item.index}${answered.has(item.index) ? ", answered" : ""}${item.index === activeQuestion?.index ? ", current" : ""}`}
+                  className={`grid min-h-11 aspect-square place-items-center rounded-xl text-sm font-bold transition disabled:cursor-not-allowed ${loading ? "" : "disabled:opacity-45"} ${loading ? "bg-[#fff0e5] text-[#b94700] ring-2 ring-[#ff9b52]" : item.index === question.index ? "bg-[#032e4d] text-white" : answered.has(item.index) ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200" : item.index === activeQuestion?.index && session.config.mode === "learn" ? "bg-[#fff0e5] text-[#b94700] ring-2 ring-[#ff9b52]" : session.flagged_question_indices.includes(item.index) ? "bg-amber-100 text-amber-800" : "bg-[#f1f5f7] text-[#526877]"}`}
+                >
+                  <span className="relative grid size-8 place-items-center">
+                    {loading && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute inset-0 rounded-full border-2 border-current border-t-transparent motion-safe:animate-spin"
+                      />
+                    )}
+                    {item.index}
+                  </span>
+                </button>
+              );
+            })}
           </div>
-          {session.config.mode === "simulate" && (
-            <Button
-              variant="secondary"
-              className="mt-5 w-full"
-              onClick={() => setConfirmSubmit(true)}
-              disabled={busy}
-            >
-              {t("submitExam")}
-            </Button>
-          )}
           <div className="mt-5 space-y-2 text-xs font-bold text-[#607282]">
             <p>
               <span className="mr-2 inline-block size-2 rounded-full bg-emerald-400" />

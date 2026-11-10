@@ -46,11 +46,6 @@ export function PracticeJourneyCard({
             {title}
           </h2>
           <p className="mt-1 text-xs leading-5 text-[#607282]">{description}</p>
-          {journey.payment_pending && (
-            <p className="mt-2 text-sm text-[#526877]">
-              Payment confirmation pending.
-            </p>
-          )}
         </div>
         <div className="grid shrink-0 grid-cols-2 gap-5 border-t border-[#dce5eb]/70 pt-4 sm:min-w-52 sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0">
           <div>

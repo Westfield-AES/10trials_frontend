@@ -32,6 +32,7 @@ interface Discovery {
   common_topics: string[];
   curriculum_years?: string[];
   clarification_needed?: string;
+  clarification_options?: string[] | null;
   confidence?: "high" | "medium" | "low";
   verified_facts?: string[];
   assumptions?: string[];
@@ -56,6 +57,7 @@ export default function NewSessionPage() {
   const [discovery, setDiscovery] = useState<Discovery | null>(null);
   const [clarification, setClarification] = useState<Discovery | null>(null);
   const [clarificationAnswer, setClarificationAnswer] = useState("");
+  const [showCustomClarification, setShowCustomClarification] = useState(false);
   const [resolutionInput, setResolutionInput] = useState("");
   const [progress, setProgress] = useState(0);
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
@@ -64,7 +66,7 @@ export default function NewSessionPage() {
   const [difficulty, setDifficulty] = useState("intermediate");
   const [format, setFormat] = useState("mixed");
   const [mode, setMode] = useState<"learn" | "simulate">("learn");
-  const [timer, setTimer] = useState(30);
+  const [timer, setTimer] = useState("30");
   const [timed, setTimed] = useState(true);
   const [target, setTarget] = useState(80);
   const [busy, setBusy] = useState(false);
@@ -74,6 +76,12 @@ export default function NewSessionPage() {
     ? account.data.active_session
     : null;
   const sessionQuestionCount = 10;
+  const timerMinutes = Number(timer);
+  const invalidTimer =
+    mode === "simulate" &&
+    timed &&
+    (!Number.isInteger(timerMinutes) || timerMinutes < 1 || timerMinutes > 480);
+  const clarificationOptions = clarification?.clarification_options ?? [];
 
   async function endSession() {
     if (!active || ending) return;
@@ -122,7 +130,7 @@ export default function NewSessionPage() {
   }
 
   async function resolveExam(input: string) {
-    if (input.length < 2) return;
+    if (input.length < 2 || busy) return;
     setResolutionInput(input);
     setBusy(true);
     setProgress(5);
@@ -150,6 +158,7 @@ export default function NewSessionPage() {
       if (status !== "exact") {
         setClarification(result);
         setClarificationAnswer("");
+        setShowCustomClarification(false);
         return;
       }
       const found = result;
@@ -175,9 +184,9 @@ export default function NewSessionPage() {
     void resolveExam(description.trim());
   }
 
-  function refineIdentification() {
-    const answer = clarificationAnswer.trim();
-    if (!answer || !clarification) return;
+  function refineIdentification(value = clarificationAnswer) {
+    const answer = value.trim();
+    if (!answer || !clarification || busy) return;
     const refinedInput = [
       resolutionInput || description.trim(),
       `Clarification requested: ${clarification.clarification_needed}`,
@@ -187,7 +196,7 @@ export default function NewSessionPage() {
   }
 
   async function generate() {
-    if (!discovery) return;
+    if (!discovery || invalidTimer) return;
     setBusy(true);
     try {
       const result = await apiRequest<{ session_id: string; job_id: string }>(
@@ -206,7 +215,7 @@ export default function NewSessionPage() {
             format,
             num_questions: sessionQuestionCount,
             mode,
-            timer_minutes: mode === "simulate" && timed ? timer : null,
+            timer_minutes: mode === "simulate" && timed ? timerMinutes : null,
             difficulty,
             selected_topics: selectedTopics,
             custom_topics: customTopic.trim()
@@ -236,7 +245,8 @@ export default function NewSessionPage() {
           format,
           num_questions: sessionQuestionCount,
           mode,
-          timer_seconds: mode === "simulate" && timed ? timer * 60 : null,
+          timer_seconds:
+            mode === "simulate" && timed ? timerMinutes * 60 : null,
         },
         difficulty,
         selected_topics: selectedTopics,
@@ -351,18 +361,26 @@ export default function NewSessionPage() {
         aria-label="Session setup progress"
         className="mb-6 grid grid-cols-3 gap-2"
       >
-        {["Your exam", "Your topics", "Your session"].map((label, index) => (
+        {["Exam", "Topics", "Session"].map((label, index) => (
           <li
             key={label}
             aria-current={step === index + 1 ? "step" : undefined}
-            className={`flex min-w-0 items-center gap-2 rounded-xl px-2 py-3 text-xs font-semibold sm:gap-3 sm:px-4 sm:text-sm ${step === index + 1 ? "bg-[#fff0e5] text-[#a94100]" : step > index + 1 ? "text-[#07436c]" : "text-[#607282]"}`}
+            className={`relative flex min-w-0 flex-col items-center gap-2 rounded-xl text-xs font-semibold sm:flex-row sm:gap-3 sm:px-4 sm:py-3 sm:text-sm ${step === index + 1 ? "text-[#a94100] sm:bg-[#fff0e5]" : step > index + 1 ? "text-[#07436c]" : "text-[#607282]"}`}
           >
             <span
               className={`grid size-7 shrink-0 place-items-center rounded-full border ${step === index + 1 ? "border-[#e85b00] bg-[#e85b00] text-white" : step > index + 1 ? "border-[#032e4d] bg-[#032e4d] text-white" : "border-[#c8d5dd] bg-white"}`}
             >
               {step > index + 1 ? <Check size={14} /> : index + 1}
             </span>
-            {label}
+            <span className="sm:hidden">{label}</span>
+            <span className="hidden sm:inline">Your {label.toLowerCase()}</span>
+            {index < 2 && (
+              <ChevronRight
+                aria-hidden="true"
+                size={16}
+                className="absolute -right-3 top-1.5 text-[#9eafbb] sm:hidden"
+              />
+            )}
           </li>
         ))}
       </ol>
@@ -382,7 +400,7 @@ export default function NewSessionPage() {
               <span className="field-label">Exam name or description</span>
               <textarea
                 className="field min-h-28 resize-y"
-                placeholder="e.g. AWS Certified Solutions Architect, IELTS Academic, Nigerian Bar Exam"
+                placeholder="e.g. IELTS Academic"
                 value={description}
                 onChange={(event) => {
                   setDescription(event.target.value);
@@ -463,30 +481,76 @@ export default function NewSessionPage() {
                   {clarification.clarification_needed ||
                     "What country, provider, subject, or level is this exam for?"}
                 </p>
-                <label className="mt-3 block">
-                  <span className="field-label">Your answer</span>
-                  <input
-                    className="field"
-                    value={clarificationAnswer}
-                    onChange={(event) =>
-                      setClarificationAnswer(event.target.value)
-                    }
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") refineIdentification();
+                {clarificationOptions.length > 0 && (
+                  <div className="mt-4">
+                    <div
+                      className="grid gap-3 sm:grid-cols-2"
+                      role="group"
+                      aria-label="Exam options"
+                    >
+                      {clarificationOptions.map((option) => (
+                        <Button
+                          key={option}
+                          type="button"
+                          variant="ghost"
+                          className="w-full justify-between text-left hover:border-[#e85b00] hover:bg-[#fff0e5]"
+                          onClick={() => refineIdentification(option)}
+                          disabled={busy}
+                        >
+                          <span className="min-w-0 break-words">{option}</span>
+                          <ChevronRight
+                            size={18}
+                            className="shrink-0"
+                            aria-hidden="true"
+                          />
+                        </Button>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      className="mt-2 min-h-11 rounded-lg text-sm font-semibold text-[#526877] underline underline-offset-4 hover:text-[#032e4d] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e85b00]"
+                      aria-expanded={showCustomClarification}
+                      aria-controls="custom-exam-clarification"
+                      onClick={() =>
+                        setShowCustomClarification((previous) => !previous)
+                      }
+                    >
+                      Something else
+                    </button>
+                  </div>
+                )}
+                {(clarificationOptions.length === 0 ||
+                  showCustomClarification) && (
+                  <form
+                    id="custom-exam-clarification"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      refineIdentification();
                     }}
-                    placeholder="Add the missing detail"
-                    autoFocus
-                  />
-                </label>
-                <Button
-                  className="mt-4 w-full sm:w-auto"
-                  variant="secondary"
-                  onClick={refineIdentification}
-                  disabled={!clarificationAnswer.trim()}
-                >
-                  Find exam
-                  <Search size={17} />
-                </Button>
+                  >
+                    <label className="mt-3 block">
+                      <span className="field-label">Your answer</span>
+                      <input
+                        className="field"
+                        value={clarificationAnswer}
+                        onChange={(event) =>
+                          setClarificationAnswer(event.target.value)
+                        }
+                        placeholder="Add the missing detail"
+                        autoFocus
+                      />
+                    </label>
+                    <Button
+                      type="submit"
+                      className="mt-4 w-full sm:w-auto"
+                      variant="secondary"
+                      disabled={busy || !clarificationAnswer.trim()}
+                    >
+                      Continue
+                      <ChevronRight size={17} aria-hidden="true" />
+                    </Button>
+                  </form>
+                )}
               </div>
             )}
             {!clarification && (
@@ -649,11 +713,24 @@ export default function NewSessionPage() {
                     <input
                       className="field"
                       type="number"
+                      inputMode="numeric"
                       min={1}
                       max={480}
+                      step={1}
                       value={timer}
-                      onChange={(event) => setTimer(Number(event.target.value))}
+                      aria-invalid={invalidTimer}
+                      aria-describedby="timer-minutes-help"
+                      onChange={(event) => setTimer(event.target.value)}
+                      onBlur={() => {
+                        if (!invalidTimer) setTimer(String(timerMinutes));
+                      }}
                     />
+                    <span
+                      id="timer-minutes-help"
+                      className="mt-2 block text-xs text-[#607282]"
+                    >
+                      Enter a whole number from 1 to 480.
+                    </span>
                   </label>
                 )}
               </div>
@@ -681,7 +758,7 @@ export default function NewSessionPage() {
                 <ChevronLeft size={17} />
                 {t("back")}
               </Button>
-              <Button onClick={generate} disabled={busy}>
+              <Button onClick={generate} disabled={busy || invalidTimer}>
                 {busy ? "Preparing your session…" : t("generate")}
                 <FilePlus2 size={17} />
               </Button>

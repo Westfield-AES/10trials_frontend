@@ -180,10 +180,6 @@ dialog::backdrop {
     height: calc(4.5rem + env(safe-area-inset-top));
     padding-top: env(safe-area-inset-top);
   }
-
-  .question-actions {
-    bottom: calc(5.75rem + env(safe-area-inset-bottom));
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
