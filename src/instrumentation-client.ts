@@ -1,5 +1,8 @@
 import * as Sentry from "@sentry/nextjs";
+import { initializeAnalytics } from "@/lib/analytics";
 import { safeTelemetryUrl, scrubSentryEvent } from "@/lib/sentry-privacy";
+
+initializeAnalytics();
 
 if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
   Sentry.init({
@@ -12,8 +15,5 @@ if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
 }
 
 export function onRouterTransitionStart(href: string, navigationType: string) {
-  Sentry.captureRouterTransitionStart(
-    safeTelemetryUrl(href),
-    navigationType,
-  );
+  Sentry.captureRouterTransitionStart(safeTelemetryUrl(href), navigationType);
 }
