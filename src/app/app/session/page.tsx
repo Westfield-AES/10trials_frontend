@@ -8,8 +8,8 @@ import { apiRequest, ApiError, waitForJob } from "@/lib/api";
 import type { WebSession } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
-import { Progress } from "@/components/ui/progress";
-import { Spinner } from "@/components/ui/spinner";
+import { EstimatedProgress } from "@/components/ui/progress";
+import { PageSkeleton } from "@/components/app/loading-skeleton";
 import { QuestionPlayer } from "@/components/session/question-player";
 import { ReportView } from "@/components/session/report-view";
 import { useI18n } from "@/components/providers/i18n-provider";
@@ -18,8 +18,12 @@ import { toast } from "@/lib/toast";
 export default function SessionPage() {
   const { t } = useI18n();
   const client = useQueryClient();
-  const [jobProgress, setJobProgress] = useState(0);
+  const [jobProgress, setJobProgress] = useState<{
+    id: string;
+    value: number;
+  } | null>(null);
   const [abandon, setAbandon] = useState(false);
+  const [starting, setStarting] = useState(false);
   const session = useQuery({
     queryKey: ["active-session"],
     queryFn: () =>
@@ -30,6 +34,7 @@ export default function SessionPage() {
         },
       }),
     retry: false,
+    refetchOnMount: "always",
     refetchInterval: (query) =>
       ["generating", "grading"].includes(query.state.data?.status ?? "")
         ? 2000
@@ -49,11 +54,21 @@ export default function SessionPage() {
     if (!watchedJob) return;
     let active = true;
     waitForJob(watchedJob, (job) => {
-      if (active) setJobProgress(job.progress);
+      if (active && !["failed", "cancelled"].includes(job.status))
+        setJobProgress((previous) => ({
+          id: watchedJob,
+          value: Math.max(
+            previous?.id === watchedJob ? previous.value : 0,
+            job.progress,
+          ),
+        }));
     })
       .then(async () => {
         if (active)
-          await client.invalidateQueries({ queryKey: ["active-session"] });
+          await Promise.all([
+            client.invalidateQueries({ queryKey: ["active-session"] }),
+            client.invalidateQueries({ queryKey: ["account"] }),
+          ]);
       })
       .catch((nextError) => {
         if (active) {
@@ -78,12 +93,7 @@ export default function SessionPage() {
     }
   }, [current?.error_message, current?.status]);
 
-  if (session.isLoading)
-    return (
-      <div className="grid min-h-[65vh] place-items-center">
-        <Spinner label="Opening your session" />
-      </div>
-    );
+  if (session.isLoading) return <PageSkeleton kind="session" />;
   if (session.error instanceof ApiError && session.error.status === 404)
     return (
       <div className="mx-auto max-w-lg py-20 text-center">
@@ -92,9 +102,6 @@ export default function SessionPage() {
           <h1 className="mt-4 text-3xl font-black text-[#032e4d]">
             No active session
           </h1>
-          <p className="mt-3 text-[#607282]">
-            Choose an exam and shape your next attempt.
-          </p>
           <Link
             href="/app/new"
             className="mt-6 inline-flex rounded-xl bg-[#ff6b00] px-6 py-3 font-extrabold text-white"
@@ -104,7 +111,7 @@ export default function SessionPage() {
         </div>
       </div>
     );
-  if (session.isError)
+  if (session.isError && !current)
     return (
       <div className="card mx-auto max-w-lg p-8 text-center">
         <h1 className="text-2xl font-black text-[#032e4d]">
@@ -124,6 +131,8 @@ export default function SessionPage() {
   }
   const sessionId = current.id;
   async function start() {
+    if (starting) return;
+    setStarting(true);
     try {
       await apiRequest(`/api/v1/sessions/${sessionId}/start`, {
         method: "POST",
@@ -136,6 +145,8 @@ export default function SessionPage() {
           ? nextError.message
           : "Could not start the session.",
       );
+    } finally {
+      setStarting(false);
     }
   }
   async function confirmAbandon() {
@@ -169,13 +180,17 @@ export default function SessionPage() {
           <h1 className="mt-5 text-3xl font-black text-[#032e4d]">
             {current.status === "generating" ? t("generating") : t("grading")}
           </h1>
-          <p className="mx-auto mt-3 max-w-lg leading-7 text-[#607282]">
-            {current.status === "generating"
-              ? "We’re matching the questions to your exam, topics, year, and difficulty."
-              : "Your answers are being evaluated and turned into a focused report."}
-          </p>
           <div className="mt-7 text-left">
-            <Progress value={jobProgress || 5} label={t("progress")} />
+            <EstimatedProgress
+              key={watchedJob ?? current.status}
+              value={Math.min(
+                jobProgress && jobProgress.id === watchedJob
+                  ? jobProgress.value
+                  : 5,
+                95,
+              )}
+              label={t("progress")}
+            />
           </div>
           <button
             className="mt-6 text-sm font-bold text-[#607282] underline"
@@ -186,22 +201,21 @@ export default function SessionPage() {
         </section>
         <Modal
           open={abandon}
-          title="Abandon this session?"
+          title="Cancel this session?"
           onClose={() => setAbandon(false)}
         >
           <div className="flex gap-3 rounded-xl bg-amber-50 p-4 text-amber-900">
             <AlertTriangle className="shrink-0" />
             <p className="text-sm leading-6">
-              Once questions have been generated, this session still counts
-              against your monthly allowance.
+              Generated questions still count toward your allowance.
             </p>
           </div>
           <div className="mt-6 flex justify-end gap-3">
             <Button variant="ghost" onClick={() => setAbandon(false)}>
-              Keep it
+              Keep session
             </Button>
             <Button variant="danger" onClick={confirmAbandon}>
-              Abandon
+              Cancel session
             </Button>
           </div>
         </Modal>
@@ -246,13 +260,15 @@ export default function SessionPage() {
           <div className="border-t border-[#dce5eb] p-7">
             <p className="text-sm leading-6 text-[#607282]">
               {current.config.mode === "simulate"
-                ? "The timer starts only when you press Start. Closing the browser will not pause it."
-                : "Answers lock after grading, but you can review previous feedback throughout the session."}
+                ? current.config.timer_seconds
+                  ? "The timer starts when you begin. Closing the browser won’t pause it."
+                  : "Review your answers before submitting. Submission is final."
+                : "Answers lock after grading. You can still review the feedback."}
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <Button onClick={start}>
+              <Button onClick={start} disabled={starting}>
                 <Play size={17} />
-                {t("start")}
+                {starting ? "Starting your session…" : t("start")}
               </Button>
               <Button variant="ghost" onClick={() => setAbandon(true)}>
                 {t("abandon")}
@@ -266,12 +282,12 @@ export default function SessionPage() {
           onClose={() => setAbandon(false)}
         >
           <p className="leading-7 text-[#607282]">
-            This generated session has already used part of your monthly
-            allowance. Discarding it will not refund that usage.
+            Generated questions still count toward your allowance if you discard
+            this session.
           </p>
           <div className="mt-6 flex justify-end gap-3">
             <Button variant="ghost" onClick={() => setAbandon(false)}>
-              Keep it
+              Keep session
             </Button>
             <Button variant="danger" onClick={confirmAbandon}>
               Discard

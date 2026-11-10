@@ -14,7 +14,7 @@ export default function PrivacyPage() {
     <LegalPage
       title="Privacy Policy"
       intro="We built 10Trials to help you practise, not to trade in your personal information. This policy explains what we collect, why we need it, and the choices you have."
-      updatedAt="2 August 2026"
+      updatedAt="8 November 2026"
     >
       <LegalSection title="The short version">
         <ul>
@@ -57,9 +57,8 @@ export default function PrivacyPage() {
             account settings.
           </li>
           <li>
-            <strong>Age and consent records:</strong> confirmation that you are
-            at least 13 and, where relevant, confirmation of permission from a
-            parent or guardian. We do not ask for your full date of birth.
+            <strong>Age confirmation:</strong> confirmation that you are 18 or
+            older. We do not ask for your full date of birth.
           </li>
           <li>
             <strong>Study information:</strong> exam descriptions, chosen topics
@@ -92,7 +91,9 @@ export default function PrivacyPage() {
           <li>
             generate practice sessions, grade answers, and prepare reports;
           </li>
-          <li>save progress and apply monthly plan allowances;</li>
+          <li>
+            save progress and apply lifetime Free and monthly Pro allowances;
+          </li>
           <li>process subscriptions and maintain transaction records;</li>
           <li>send verification, security, billing, and service messages;</li>
           <li>
@@ -115,10 +116,9 @@ export default function PrivacyPage() {
             service you ask for.
           </li>
           <li>
-            <strong>Consent:</strong> for optional analytics, optional
-            reminders, and the processing of a learner&apos;s information where
-            parent or guardian permission is required. You may withdraw consent
-            at any time for future processing.
+            <strong>Consent:</strong> for optional analytics and optional
+            reminders. You may withdraw consent at any time for future
+            processing.
           </li>
           <li>
             <strong>Legitimate interests:</strong> to keep 10Trials safe,
@@ -250,13 +250,11 @@ export default function PrivacyPage() {
         </p>
       </LegalSection>
 
-      <LegalSection title="Children and teenagers">
+      <LegalSection title="Age requirement">
         <p>
-          10Trials is not for children under 13. Learners under 18 must have
-          permission from a parent or legal guardian. A parent or guardian may
-          contact us to review or request deletion of a young learner&apos;s
-          information. If we learn that an under-13 account was created, we will
-          disable it and take appropriate steps to remove the information.
+          10Trials is for adults aged 18 and over. If we learn that someone
+          under 18 has created an account, we will disable it and take
+          appropriate steps to remove their information.
         </p>
       </LegalSection>
 

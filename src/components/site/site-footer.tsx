@@ -8,15 +8,14 @@ export function SiteFooter() {
         <div>
           <Logo />
           <p className="mt-3 max-w-sm text-sm leading-6 text-[#607282]">
-            Focused preparation, precise feedback, and realistic simulations for
-            professional credentials and high-stakes exams.
+            Focused practice for your next exam.
           </p>
         </div>
         <div>
           <p className="mb-3 font-black text-[#032e4d]">Product</p>
           <div className="flex flex-col gap-2 text-sm text-[#607282]">
             <Link href="/pricing">Pricing</Link>
-            <Link href="/signup">Create account</Link>
+            <Link href="/signup">Start free</Link>
             <Link href="/login">Log in</Link>
           </div>
         </div>
@@ -29,7 +28,7 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="container-shell mt-10 border-t border-[#dce5eb] pt-6 text-xs text-[#607282]">
-        © {new Date().getFullYear()} 10Trials. Built for focused preparation.
+        © {new Date().getFullYear()} 10Trials.
       </div>
     </footer>
   );

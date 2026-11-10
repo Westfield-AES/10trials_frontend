@@ -102,6 +102,36 @@ export interface WebSession {
   is_retry: boolean;
 }
 
+export interface PracticeJourney {
+  phase:
+    | "start_free"
+    | "free_practice"
+    | "upgrade_required"
+    | "pro_practice"
+    | "monthly_limit_reached";
+  next_step:
+    "resume" | "start_free" | "practice" | "upgrade" | "wait_for_reset";
+  can_generate: boolean;
+  has_active_session: boolean;
+  sessions_remaining: number;
+  questions_remaining: number;
+  usage_period: "lifetime" | "monthly";
+  payment_pending: boolean;
+}
+
+export interface PlanCatalogue {
+  plans: Array<{
+    name: "free" | "pro";
+    display_name: string;
+    prices: Array<{
+      currency: "NGN" | "USD";
+      interval: "monthly" | "annual";
+      amount: number;
+    }>;
+    entitlements: AccountOverview["entitlements"];
+  }>;
+}
+
 export interface AccountOverview {
   user: {
     id: string;
@@ -115,7 +145,11 @@ export interface AccountOverview {
     age_confirmed: boolean;
   };
   usage: { sessions: number; questions: number };
+  journey: PracticeJourney;
   entitlements: {
+    usage_period: "lifetime" | "monthly";
+    session_limit: number;
+    question_limit: number;
     sessions_per_month: number;
     questions_per_month: number;
     max_questions_per_session: number;

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { apiRequest } from "@/lib/api";
 import type { Report } from "@/lib/types";
-import { Spinner } from "@/components/ui/spinner";
+import { PageSkeleton } from "@/components/app/loading-skeleton";
 
 interface StoredSession {
   id: string;
@@ -46,13 +46,8 @@ export default function HistoryDetailPage() {
     queryFn: () =>
       apiRequest<{ session: StoredSession }>(`/api/v1/sessions/${id}`),
   });
-  if (detail.isLoading)
-    return (
-      <div className="grid min-h-[60vh] place-items-center">
-        <Spinner label="Opening report" />
-      </div>
-    );
-  if (detail.isError)
+  if (detail.isLoading) return <PageSkeleton kind="report" />;
+  if (detail.isError && !detail.data)
     return (
       <section className="card mx-auto max-w-lg p-8 text-center">
         <h1 className="text-2xl font-black text-[#032e4d]">
@@ -92,10 +87,6 @@ export default function HistoryDetailPage() {
           Boolean(entry && typeof entry.question_index === "number"),
       )
     : [];
-  const motivationalNote =
-    typeof report?.motivational_note === "string"
-      ? report.motivational_note
-      : "";
   return (
     <div className="mx-auto max-w-5xl">
       <Link
@@ -154,22 +145,18 @@ export default function HistoryDetailPage() {
               </div>
             </section>
             <section className="card p-6">
-              <h2 className="text-xl font-black text-[#032e4d]">Report note</h2>
-              <p className="mt-4 leading-7 text-[#526877]">
-                {motivationalNote ||
-                  "A detailed report note was not recorded for this session."}
-              </p>
-              <h3 className="mt-6 text-xs font-black uppercase tracking-wider text-[#c94d00]">
-                Weak areas
+              <h2 className="text-xl font-black text-[#032e4d]">Focus areas</h2>
+              <h3 className="mt-5 text-xs font-black uppercase tracking-wider text-[#c94d00]">
+                Needs practice
               </h3>
               <p className="mt-2 text-sm">
                 {weakAreas.join(", ") || "None recorded"}
               </p>
               <h3 className="mt-5 text-xs font-black uppercase tracking-wider text-[#13734d]">
-                Strong areas
+                Strengths
               </h3>
               <p className="mt-2 text-sm">
-                {strongAreas.join(", ") || "Still emerging"}
+                {strongAreas.join(", ") || "None recorded"}
               </p>
             </section>
           </div>
@@ -201,8 +188,7 @@ export default function HistoryDetailPage() {
         </>
       ) : (
         <section className="card mt-6 p-8 text-[#607282]">
-          The summary is available, but this legacy session does not contain a
-          full structured report.
+          Only a summary is available for this session.
         </section>
       )}
     </div>

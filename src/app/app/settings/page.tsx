@@ -1,10 +1,12 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, ShieldCheck } from "lucide-react";
+import { AlertTriangle, LogOut } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { apiRequest } from "@/lib/api";
 import { auth } from "@/lib/firebase";
+import { firebaseErrorMessage } from "@/lib/firebase-errors";
 import type { AccountOverview, Language } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
@@ -14,6 +16,7 @@ import { toast } from "@/lib/toast";
 
 export default function SettingsPage() {
   const { t } = useI18n();
+  const router = useRouter();
   const client = useQueryClient();
   const account = useQuery({
     queryKey: ["account"],
@@ -95,13 +98,9 @@ export default function SettingsPage() {
   }
   return (
     <div className="mx-auto max-w-4xl">
-      <p className="eyebrow">Account</p>
-      <h1 className="mt-2 text-4xl font-black tracking-[-0.04em] text-[#032e4d]">
+      <h1 className="text-4xl font-black tracking-[-0.04em] text-[#032e4d]">
         {t("settings")}
       </h1>
-      <p className="mt-2 text-[#607282]">
-        Manage your profile, communication, and data.
-      </p>
       <section className="card mt-7 p-6">
         <h2 className="text-xl font-black text-[#032e4d]">Profile</h2>
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
@@ -143,17 +142,35 @@ export default function SettingsPage() {
           <span>
             <strong>Study reminders</strong>
             <span className="mt-1 block text-sm text-[#607282]">
-              Occasional encouragement and study reminders. You can change this
-              choice at any time.
+              Occasional reminders by email.
             </span>
           </span>
         </label>
       </section>
+      <Button
+        variant="ghost"
+        className="mt-6 w-full md:hidden"
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          try {
+            await auth.signOut();
+            toast.info("You’ve been signed out.");
+            router.replace("/");
+          } catch (error) {
+            toast.error(firebaseErrorMessage(error));
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        <LogOut size={18} />
+        {t("logout")}
+      </Button>
       <section className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-6">
         <h2 className="text-xl font-black text-red-900">Account deletion</h2>
         <p className="mt-2 text-sm leading-6 text-red-800">
-          Deleting your account signs you out and removes access to 10Trials.
-          You can restore it later if you change your mind.
+          You’ll lose access until you restore your account.
         </p>
         <div className="mt-5">
           <Button
@@ -200,10 +217,6 @@ export default function SettingsPage() {
           </Button>
         </div>
       </Modal>
-      <div className="mt-6 flex items-center gap-2 text-xs text-[#607282]">
-        <ShieldCheck size={16} />
-        10Trials never stores your password or payment-card details.
-      </div>
     </div>
   );
 }
