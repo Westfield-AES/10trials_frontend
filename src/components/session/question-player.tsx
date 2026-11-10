@@ -203,9 +203,7 @@ export function QuestionPlayer({
         }
       }
       if (result.job_id || !result.session) await onRefresh();
-      toast.success(
-        session.config.mode === "learn" ? "Answer graded." : "Answer saved.",
-      );
+      if (session.config.mode === "simulate") toast.success("Answer saved.");
       return true;
     } catch (nextError) {
       // A lost response can still mean the server accepted the answer.
