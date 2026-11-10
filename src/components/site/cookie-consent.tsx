@@ -72,10 +72,10 @@ export function CookieConsent() {
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="flex-1">
-          <p className="font-black text-[#032e4d]">Your privacy, your choice</p>
+          <p className="font-black text-[#032e4d]">Cookie preferences</p>
           <p className="mt-1 text-sm text-[#607282]">
-            Essential storage keeps 10Trials working. With permission, optional
-            analytics help us improve the learning experience.
+            Essential storage keeps 10Trials working. Allow optional analytics
+            to help us improve it.
           </p>
         </div>
         <div className="flex gap-2">

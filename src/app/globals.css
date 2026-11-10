@@ -1,11 +1,13 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
   --font-weight-extrabold: 700;
   --font-weight-black: 800;
-  --radius-xl: 0.5rem;
-  --radius-2xl: 0.75rem;
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1.25rem;
 }
 
 :root {
@@ -40,6 +42,7 @@ body {
   background: var(--background);
   font-family: var(--font-sans);
   text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
 button,
@@ -52,6 +55,21 @@ textarea {
 button,
 a {
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+button:not(:disabled),
+summary {
+  cursor: pointer;
+}
+
+input[type="radio"],
+input[type="checkbox"] {
+  accent-color: var(--orange-600);
+}
+
+section[id] {
+  scroll-margin-top: 6rem;
 }
 
 :focus-visible {
@@ -65,23 +83,26 @@ a {
 }
 
 .container-shell {
-  width: min(1180px, calc(100% - 2rem));
+  width: min(1180px, calc(100% - 2.5rem));
   margin-inline: auto;
 }
 
 .card {
   border: 1px solid var(--line);
-  border-radius: 0.75rem;
+  border-radius: 1.25rem;
   background: white;
-  box-shadow: 0 4px 18px rgba(3, 46, 77, 0.06);
+  box-shadow:
+    0 2px 3px rgba(3, 46, 77, 0.02),
+    0 8px 28px rgba(3, 46, 77, 0.035);
 }
 
 .field {
   width: 100%;
-  min-height: 3rem;
+  min-height: 3.25rem;
   border: 1px solid #c8d5dd;
-  border-radius: 0.5rem;
-  padding: 0.75rem 0.9rem;
+  border-radius: 0.875rem;
+  padding: 0.85rem 1rem;
+  font-size: 1rem;
   color: var(--ink);
   background: white;
   transition:
@@ -113,6 +134,56 @@ a {
 
 .text-balance {
   text-wrap: balance;
+}
+
+.safe-bottom {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
+
+.app-content {
+  padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
+}
+
+.app-content h1 {
+  overflow-wrap: anywhere;
+}
+
+.site-header {
+  padding-top: env(safe-area-inset-top);
+}
+
+.answer-option:has(input:focus-visible) {
+  outline: 2px solid var(--orange-600);
+  outline-offset: 3px;
+}
+
+dialog::backdrop {
+  background: rgba(1, 28, 48, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+@media (min-width: 768px) {
+  .app-content {
+    padding-bottom: 2.5rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .app-content h1 {
+    font-size: 1.875rem;
+    line-height: 1.2;
+  }
+}
+
+@media (max-width: 767px) {
+  .app-header {
+    height: calc(4.5rem + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .question-actions {
+    bottom: calc(5.75rem + env(safe-area-inset-bottom));
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,35 +1,49 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowRight,
   Check,
   Clock3,
+  ChevronDown,
+  Sparkles,
   Globe2,
   MessageSquareText,
   Target,
 } from "lucide-react";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
+import { PracticePreview } from "@/components/site/practice-preview";
+
+export const metadata: Metadata = {
+  description:
+    "Start with 5 free practice sessions of 10 questions each, once per account. No card needed. Upgrade to Pro when you want more exam practice.",
+  openGraph: {
+    title: "10Trials | Start free. Practise smarter.",
+    description:
+      "5 free sessions. 10 questions each. No card needed. Practise at your own pace and choose Pro when you’re ready for more.",
+  },
+};
 
 const features = [
   {
     icon: MessageSquareText,
     title: "Learn as you answer",
-    body: "Get precise feedback after every question, with the idea explained in plain language.",
+    body: "Understand each answer with clear explanations.",
   },
   {
     icon: Clock3,
     title: "Simulate the real thing",
-    body: "Practise under timed exam conditions, flag questions, review, and submit with confidence.",
+    body: "Practise with a timer, flag questions, and review before submitting.",
   },
   {
     icon: Target,
     title: "Target weak areas",
-    body: "Every report finds the topics holding you back and turns them into a focused retry session.",
+    body: "Find the gaps in your report, then retry those topics.",
   },
   {
     icon: Globe2,
-    title: "Built for high-stakes goals",
-    body: "Prepare for professional certifications, licensure, admissions, and advanced academic exams in four languages.",
+    title: "Study in your language",
+    body: "Choose English, French, Spanish, or Portuguese.",
   },
 ];
 
@@ -57,26 +71,25 @@ export default function HomePage() {
     <>
       <SiteHeader />
       <main id="main-content">
-        <section className="bg-[#f7f9fb] py-18 sm:py-24">
-          <div className="container-shell grid items-center gap-14 lg:grid-cols-[1.08fr_.92fr]">
+        <section className="bg-[#f7f9fb] pb-14 pt-10 sm:py-20">
+          <div className="container-shell grid items-center gap-12 lg:grid-cols-[1.08fr_.92fr] lg:gap-20">
             <div>
-              <p className="eyebrow">
-                Focused preparation for high-stakes exams
+              <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#f5d5bd] bg-[#fff0e5] px-3 py-2 text-xs font-semibold text-[#b94700]">
+                <Sparkles size={14} /> Your next chapter starts with practice
               </p>
-              <h1 className="text-balance mt-5 max-w-3xl text-5xl font-black leading-[1.04] tracking-[-0.055em] text-[#032e4d] sm:text-6xl">
+              <h1 className="text-balance max-w-3xl text-[clamp(2.5rem,10.5vw,3.5rem)] font-black leading-[1.08] tracking-[-0.055em] text-[#032e4d] sm:text-6xl">
                 Practise smarter.
                 <br />
                 <span className="text-[#ff6b00]">Perform stronger.</span>
               </h1>
-              <p className="mt-6 max-w-xl text-lg leading-8 text-[#526877]">
-                Prepare for a professional certification, licence, admissions
-                test, or advanced exam with original questions, precise
-                feedback, and a clear view of what to work on next.
+              <p className="mt-5 max-w-xl text-base leading-7 sm:text-lg sm:leading-8 text-[#526877]">
+                Prepare for your next exam with focused questions, clear
+                feedback, and realistic simulations.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href="/signup"
-                  className="inline-flex min-h-13 items-center justify-center gap-2 rounded-xl bg-[#e85b00] px-7 font-bold text-white hover:bg-[#c94d00]"
+                  className="inline-flex min-h-13 items-center justify-center gap-2 rounded-xl bg-[#e85b00] px-7 font-bold text-white shadow-[0_3px_0_#b94700] transition hover:bg-[#c94d00]"
                 >
                   Start free <ArrowRight size={18} />
                 </Link>
@@ -87,70 +100,17 @@ export default function HomePage() {
                   See how it works
                 </Link>
               </div>
-              <div className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm font-bold text-[#607282]">
+              <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-xs font-medium text-[#607282]">
                 <span className="flex items-center gap-2">
                   <Check size={17} className="text-[#17885b]" /> No card
                   required
                 </span>
                 <span className="flex items-center gap-2">
-                  <Check size={17} className="text-[#17885b]" /> 10 free
-                  sessions monthly
+                  <Check size={17} className="text-[#17885b]" /> 5 free sessions
                 </span>
               </div>
             </div>
-            <div className="mx-auto w-full max-w-lg">
-              <div className="card p-6 sm:p-8">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-extrabold uppercase tracking-wider text-[#607282]">
-                      AWS Solutions Architect – Associate
-                    </p>
-                    <h2 className="mt-1 text-xl font-black text-[#032e4d]">
-                      Question 7 of 10
-                    </h2>
-                  </div>
-                  <span className="rounded-full bg-[#dff5e9] px-3 py-1 text-xs font-extrabold text-[#13734d]">
-                    Learn mode
-                  </span>
-                </div>
-                <div className="my-6 h-2 overflow-hidden rounded-full bg-[#dcebf4]">
-                  <div className="h-full w-[70%] rounded-full bg-[#ff6b00]" />
-                </div>
-                <p className="text-xs font-extrabold text-[#e85b00]">
-                  DESIGN RESILIENT ARCHITECTURES
-                </p>
-                <p className="mt-2 text-lg font-bold leading-7">
-                  A stateless web application must remain available if one
-                  Availability Zone fails. Which architecture best meets this
-                  requirement?
-                </p>
-                <div className="mt-5 grid gap-3">
-                  {[
-                    "A  ·  One larger EC2 instance in a single Availability Zone",
-                    "B  ·  An Auto Scaling group across multiple Availability Zones behind an Application Load Balancer",
-                    "C  ·  Multiple EC2 instances in one Availability Zone with nightly snapshots",
-                    "D  ·  One EC2 instance with two attached EBS volumes",
-                  ].map((option, index) => (
-                    <div
-                      key={option}
-                      className={`rounded-xl border p-3.5 text-sm font-bold ${index === 1 ? "border-[#ff6b00] bg-[#fff0e5] text-[#b94700]" : "border-[#dce5eb]"}`}
-                    >
-                      {option}
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-5 rounded-xl bg-[#e9f8f0] p-4">
-                  <p className="font-black text-[#13734d]">
-                    Correct. This is the most resilient design.
-                  </p>
-                  <p className="mt-1 text-sm leading-6 text-[#3f6554]">
-                    Distributing instances across Availability Zones removes a
-                    single-zone failure point, while the load balancer routes
-                    traffic to healthy instances.
-                  </p>
-                </div>
-              </div>
-            </div>
+            <PracticePreview />
           </div>
         </section>
 
@@ -161,21 +121,23 @@ export default function HomePage() {
           <div className="container-shell">
             <div className="grid gap-6 lg:grid-cols-[.8fr_2.2fr] lg:items-center">
               <div>
-                <p className="eyebrow">Broad exam coverage</p>
                 <h2
                   id="exam-coverage-title"
-                  className="mt-2 text-2xl font-black tracking-[-0.03em] text-[#032e4d]"
+                  className="text-2xl font-black tracking-[-0.03em] text-[#032e4d]"
                 >
-                  Built for serious credentials
+                  Find your exam
                 </h2>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-2 gap-4">
                 {examFamilies.map((family) => (
-                  <div key={family.category}>
+                  <div
+                    key={family.category}
+                    className="rounded-2xl bg-[#f7f9fb] p-4"
+                  >
                     <p className="text-xs font-extrabold uppercase tracking-wider text-[#e85b00]">
                       {family.category}
                     </p>
-                    <p className="mt-1 text-sm font-bold leading-6 text-[#526877]">
+                    <p className="mt-2 text-xs leading-6 text-[#526877]">
                       {family.exams}
                     </p>
                   </div>
@@ -185,34 +147,33 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="how-it-works" className="py-22">
+        <section id="how-it-works" className="py-14 sm:py-20">
           <div className="container-shell">
             <div className="mx-auto max-w-2xl text-center">
-              <p className="eyebrow">Built around your goal</p>
-              <h2 className="mt-3 text-4xl font-black tracking-[-0.04em] text-[#032e4d]">
-                From exam goal to focused plan
+              <h2 className="text-3xl font-bold tracking-[-0.04em] text-[#032e4d] sm:text-4xl">
+                How it works
               </h2>
             </div>
-            <div className="mt-12 grid gap-5 md:grid-cols-3">
+            <div className="mt-8 grid gap-4 md:grid-cols-3">
               {[
                 [
                   "01",
-                  "Identify the exact exam",
-                  "Enter the credential, provider, level, country, or exam code. 10Trials maps the official name, governing body, domains, and relevant version.",
+                  "Choose your exam",
+                  "Enter your exam and select the topics you want to practise.",
                 ],
                 [
                   "02",
-                  "Shape your session",
-                  "Choose difficulty, topics, question format, Learn or Simulate mode, and a target score.",
+                  "Set up your session",
+                  "Set the difficulty and choose Learn or Simulate mode.",
                 ],
                 [
                   "03",
-                  "Practise and improve",
-                  "Answer, review your report, and retry the weak areas with a fresh focused session.",
+                  "Review and improve",
+                  "Use your results to focus your next session on weak areas.",
                 ],
               ].map(([number, title, body]) => (
                 <article key={number} className="card p-7">
-                  <span className="text-3xl font-black text-[#ff6b00]">
+                  <span className="inline-flex size-10 items-center justify-center rounded-xl bg-[#fff0e5] text-sm font-bold text-[#b94700]">
                     {number}
                   </span>
                   <h3 className="mt-5 text-xl font-black text-[#032e4d]">
@@ -225,7 +186,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="bg-[#032e4d] py-22 text-white">
+        <section className="bg-[#032e4d] py-14 text-white sm:py-20">
           <div className="container-shell">
             <div className="grid gap-5 sm:grid-cols-2">
               {features.map(({ icon: Icon, title, body }) => (
@@ -244,36 +205,43 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="faq" className="py-22">
+        <section id="faq" className="py-14 sm:py-20">
           <div className="container-shell grid gap-12 lg:grid-cols-[.75fr_1.25fr]">
             <div>
-              <p className="eyebrow">Questions, answered</p>
-              <h2 className="mt-3 text-4xl font-black tracking-[-0.04em] text-[#032e4d]">
-                A clear start, no guesswork
+              <h2 className="text-3xl font-bold tracking-[-0.04em] text-[#032e4d] sm:text-4xl">
+                Common questions
               </h2>
             </div>
             <div className="divide-y divide-[#dce5eb]">
               {[
                 [
-                  "Can I prepare for any exam?",
-                  "10Trials supports professional certifications, licensing exams, postgraduate admissions tests, language proficiency, civil-service, and advanced academic exams. Enter the exact credential or describe it naturally.",
+                  "What do I get for free?",
+                  "5 sessions of 10 questions, once per account. The free allowance does not reset each month.",
+                ],
+                [
+                  "Will I be charged when my free sessions run out?",
+                  "No. You only pay if you choose a Pro plan.",
+                ],
+                [
+                  "Can I still see my reports after using my free allowance?",
+                  "Yes. You can review past reports and finish an existing session.",
                 ],
                 [
                   "What is the difference between Learn and Simulate?",
-                  "Learn gives feedback after each answer. Simulate behaves like an exam: navigate freely, flag questions, and receive results after submission.",
-                ],
-                [
-                  "Do I need to install an app?",
-                  "No. 10Trials runs entirely in your browser on desktop or mobile.",
+                  "Learn gives feedback after each answer. Simulate lets you review and flag questions, with results after submission.",
                 ],
                 [
                   "Does closing the browser stop a timer?",
-                  "No. Timed simulations are enforced on the server and submit automatically when time expires.",
+                  "No. The timer keeps running and your answers are submitted when time expires.",
                 ],
               ].map(([q, a]) => (
                 <details key={q} className="group py-5">
-                  <summary className="cursor-pointer list-none pr-8 text-lg font-black text-[#032e4d]">
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 text-base font-semibold text-[#032e4d]">
                     {q}
+                    <ChevronDown
+                      size={18}
+                      className="shrink-0 text-[#607282] transition-transform group-open:rotate-180"
+                    />
                   </summary>
                   <p className="mt-3 max-w-2xl leading-7 text-[#607282]">{a}</p>
                 </details>
@@ -282,19 +250,26 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="pb-22">
-          <div className="container-shell overflow-hidden rounded-xl border border-[#dce5eb] bg-[#f4f7f9] px-6 py-14 text-center sm:px-12">
+        <section className="pb-14 sm:pb-20">
+          <div className="container-shell overflow-hidden rounded-3xl border border-[#dce5eb] bg-[#f4f7f9] px-6 py-14 text-center sm:px-12">
             <h2 className="text-balance mx-auto max-w-2xl text-4xl font-black tracking-[-0.04em] text-[#032e4d]">
-              One exam. Ten focused trials. Measurable progress.
+              Ready for your next exam?
             </h2>
-            <p className="mx-auto mt-4 max-w-xl text-[#607282]">
-              Start with ten free sessions every calendar month.
+            <p className="mx-auto mt-4 max-w-xl leading-7 text-[#607282]">
+              Pro is ₦15,000/month or ₦150,000/year for 30 sessions of 10
+              questions each month. Also available at $12/month or $120/year.
             </p>
             <Link
               href="/signup"
               className="mt-7 inline-flex min-h-13 items-center rounded-xl bg-[#032e4d] px-7 font-bold text-white"
             >
-              Create your free account
+              Start free
+            </Link>
+            <Link
+              href="/pricing"
+              className="mt-4 block text-sm font-bold text-[#07436c]"
+            >
+              Compare plans
             </Link>
           </div>
         </section>

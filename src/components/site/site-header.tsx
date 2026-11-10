@@ -8,7 +8,7 @@ import { Logo } from "@/components/ui/logo";
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   return (
-    <header className="sticky top-0 z-40 border-b border-[#dce5eb]/80 bg-white/95 backdrop-blur">
+    <header className="site-header sticky top-0 z-40 border-b border-[#dce5eb]/80 bg-white/95 backdrop-blur-xl">
       <div className="container-shell flex h-18 items-center justify-between">
         <Logo />
         <nav
@@ -40,29 +40,39 @@ export function SiteHeader() {
             className="rounded-xl bg-[#e85b00] px-5 py-3 text-sm font-bold text-white hover:bg-[#c94d00]"
             href="/signup"
           >
-            Start practising
+            Start free
           </Link>
         </nav>
-        <button
-          className="rounded-lg p-2 md:hidden"
-          aria-label={open ? "Close navigation" : "Open navigation"}
-          aria-expanded={open}
-          onClick={() => setOpen((value) => !value)}
-        >
-          {open ? <X /> : <Menu />}
-        </button>
+        <div className="flex items-center gap-2 md:hidden">
+          <Link
+            href="/signup"
+            className="inline-flex min-h-11 items-center rounded-xl bg-[#e85b00] px-4 text-xs font-bold text-white transition-colors hover:bg-[#c94d00]"
+          >
+            Start free
+          </Link>
+          <button
+            className="grid size-11 place-items-center rounded-full text-[#032e4d] hover:bg-[#f4f8fa]"
+            aria-label={open ? "Close navigation" : "Open navigation"}
+            aria-expanded={open}
+            aria-controls="site-mobile-navigation"
+            onClick={() => setOpen((value) => !value)}
+          >
+            {open ? <X /> : <Menu />}
+          </button>
+        </div>
       </div>
       {open && (
         <nav
           className="container-shell flex flex-col gap-2 border-t border-[#dce5eb] py-4 md:hidden"
           aria-label="Mobile navigation"
+          id="site-mobile-navigation"
         >
           {[
             ["How it works", "/#how-it-works"],
             ["Pricing", "/pricing"],
             ["FAQ", "/#faq"],
             ["Log in", "/login"],
-            ["Start practising", "/signup"],
+            ["Start free", "/signup"],
           ].map(([label, href]) => (
             <Link
               key={href}

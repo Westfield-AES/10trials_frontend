@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Flag, Send, Timer } from "lucide-react";
 import { apiRequest, waitForJob } from "@/lib/api";
 import type { SessionAnswer, WebSession } from "@/lib/types";
@@ -15,6 +16,50 @@ type AnswerEvaluation = Pick<
   "feedback" | "result" | "score" | "weak_area_flag"
 >;
 
+function scrollToSection(element: HTMLElement) {
+  const margin =
+    parseFloat(window.getComputedStyle(element).scrollMarginTop) || 0;
+  const start = window.scrollY;
+  const maxScroll = Math.max(
+    0,
+    document.documentElement.scrollHeight - window.innerHeight,
+  );
+  const target = Math.max(
+    0,
+    Math.min(maxScroll, start + element.getBoundingClientRect().top - margin),
+  );
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    window.scrollTo({ top: target, behavior: "instant" });
+    return () => {};
+  }
+
+  const distance = target - start;
+  if (Math.abs(distance) < 1) return () => {};
+  const duration = Math.min(800, 550 + Math.abs(distance) * 0.15);
+  const startedAt = performance.now();
+  let frame = 0;
+  const stop = () => {
+    window.cancelAnimationFrame(frame);
+    window.removeEventListener("wheel", stop);
+    window.removeEventListener("touchstart", stop);
+    window.removeEventListener("pointerdown", stop);
+    window.removeEventListener("keydown", stop);
+  };
+  const animate = (now: number) => {
+    const progress = Math.min(1, (now - startedAt) / duration);
+    const eased = progress * progress * (3 - 2 * progress);
+    window.scrollTo({ top: start + distance * eased, behavior: "instant" });
+    if (progress < 1) frame = window.requestAnimationFrame(animate);
+    else stop();
+  };
+  window.addEventListener("wheel", stop, { passive: true });
+  window.addEventListener("touchstart", stop, { passive: true });
+  window.addEventListener("pointerdown", stop, { passive: true });
+  window.addEventListener("keydown", stop);
+  frame = window.requestAnimationFrame(animate);
+  return stop;
+}
+
 export function QuestionPlayer({
   session,
   onRefresh,
@@ -23,7 +68,15 @@ export function QuestionPlayer({
   onRefresh: () => Promise<unknown>;
 }) {
   const { t } = useI18n();
-  const activeQuestion = session.questions[session.current_question_index];
+  const client = useQueryClient();
+  const questionStartRef = useRef<HTMLDivElement>(null);
+  const feedbackRef = useRef<HTMLDivElement>(null);
+  const scrollToQuestionIndex = useRef<number | null>(null);
+  const scrollToFeedbackIndex = useRef<number | null>(null);
+  const cancelScroll = useRef<(() => void) | null>(null);
+  const activeQuestion =
+    session.questions[session.current_question_index] ??
+    (session.config.mode === "learn" ? session.questions.at(-1) : undefined);
   const [reviewedQuestionIndex, setReviewedQuestionIndex] = useState<
     number | null
   >(null);
@@ -38,6 +91,7 @@ export function QuestionPlayer({
   );
   const [answer, setAnswer] = useState(existing?.user_answer ?? "");
   const [busy, setBusy] = useState(false);
+  const [pendingAnswer, setPendingAnswer] = useState<number | null>(null);
   const [confirmSubmit, setConfirmSubmit] = useState(false);
   const [feedback, setFeedback] = useState<{
     questionIndex: number;
@@ -48,6 +102,7 @@ export function QuestionPlayer({
       ? Math.max(0, session.timer_deadline - Math.floor(Date.now() / 1000))
       : null,
   );
+  useEffect(() => () => cancelScroll.current?.(), []);
   useEffect(() => {
     const timer = window.setTimeout(
       () => setAnswer(existing?.user_answer ?? ""),
@@ -68,28 +123,63 @@ export function QuestionPlayer({
   useEffect(() => {
     if (remaining === 0) void onRefresh();
   }, [onRefresh, remaining]);
-  const answered = useMemo(
-    () => new Set(session.answers.map((item) => item.question_index)),
-    [session.answers],
-  );
+  const answered = useMemo(() => {
+    const indices = new Set(session.answers.map((item) => item.question_index));
+    if (session.config.mode === "simulate" && pendingAnswer !== null)
+      indices.add(pendingAnswer);
+    return indices;
+  }, [pendingAnswer, session.answers, session.config.mode]);
+  const learnComplete =
+    session.config.mode === "learn" &&
+    session.questions.every((item) =>
+      session.answers.some(
+        (saved) => saved.question_index === item.index && Boolean(saved.result),
+      ),
+    );
+  useEffect(() => {
+    if (
+      question?.index !== undefined &&
+      scrollToQuestionIndex.current === question.index &&
+      questionStartRef.current
+    ) {
+      scrollToQuestionIndex.current = null;
+      cancelScroll.current?.();
+      cancelScroll.current = scrollToSection(questionStartRef.current);
+    }
+  }, [question?.index]);
+  useEffect(() => {
+    if (
+      question?.index !== undefined &&
+      scrollToFeedbackIndex.current === question.index &&
+      feedbackRef.current
+    ) {
+      scrollToFeedbackIndex.current = null;
+      cancelScroll.current?.();
+      cancelScroll.current = scrollToSection(feedbackRef.current);
+    }
+  }, [question?.index, feedback, existing, session.feedback]);
   if (!question) return null;
 
   async function saveAnswer(value = answer) {
     if (!value.trim()) return false;
     const submittedQuestionIndex = question.index;
     setBusy(true);
+    setPendingAnswer(submittedQuestionIndex);
     setFeedback(null);
     try {
-      const result = await apiRequest<{ job_id?: string }>(
-        `/api/v1/sessions/${session.id}/answers`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            question_index: question.index,
-            answer: value,
-          }),
-        },
-      );
+      await client.cancelQueries({ queryKey: ["active-session"] });
+      const result = await apiRequest<{
+        job_id?: string;
+        session?: WebSession;
+      }>(`/api/v1/sessions/${session.id}/answers`, {
+        method: "POST",
+        body: JSON.stringify({
+          question_index: question.index,
+          answer: value,
+        }),
+      });
+      if (result.session)
+        client.setQueryData(["active-session"], result.session);
       if (result.job_id) {
         const job = await waitForJob<{ evaluation?: AnswerEvaluation }>(
           result.job_id,
@@ -97,6 +187,8 @@ export function QuestionPlayer({
         if (job.status === "failed")
           throw new Error(job.error_message || "Could not grade the answer.");
         if (job.result?.evaluation) {
+          if (session.config.mode === "learn")
+            scrollToFeedbackIndex.current = submittedQuestionIndex;
           setFeedback({
             questionIndex: submittedQuestionIndex,
             evaluation: job.result.evaluation,
@@ -112,6 +204,8 @@ export function QuestionPlayer({
       );
       return true;
     } catch (nextError) {
+      // A lost response can still mean the server accepted the answer.
+      await onRefresh();
       toast.error(
         nextError instanceof Error
           ? nextError.message
@@ -119,21 +213,26 @@ export function QuestionPlayer({
       );
       return false;
     } finally {
+      setPendingAnswer(null);
       setBusy(false);
     }
   }
   async function navigate(index: number) {
+    if (busy) return;
+    if (index === question.index) return;
     if (session.config.mode === "learn") {
       const canReview = answered.has(index) || activeQuestion?.index === index;
       if (!canReview) return;
       const targetAnswer = session.answers.find(
         (item) => item.question_index === index,
       );
+      scrollToQuestionIndex.current = index;
       setAnswer(targetAnswer?.user_answer ?? "");
       setFeedback(null);
       setReviewedQuestionIndex(index === activeQuestion?.index ? null : index);
       return;
     }
+    scrollToQuestionIndex.current = index;
     try {
       await apiRequest(`/api/v1/sessions/${session.id}/navigate`, {
         method: "POST",
@@ -141,6 +240,7 @@ export function QuestionPlayer({
       });
       await onRefresh();
     } catch (nextError) {
+      scrollToQuestionIndex.current = null;
       toast.error(
         nextError instanceof Error
           ? nextError.message
@@ -149,6 +249,7 @@ export function QuestionPlayer({
     }
   }
   async function flag() {
+    if (busy) return;
     const willFlag = !session.flagged_question_indices.includes(question.index);
     try {
       await apiRequest(`/api/v1/sessions/${session.id}/flag`, {
@@ -171,12 +272,18 @@ export function QuestionPlayer({
     }
   }
   async function submitAll() {
+    if (busy) return;
     setBusy(true);
     setConfirmSubmit(false);
     try {
       await apiRequest(`/api/v1/sessions/${session.id}/submit`, {
         method: "POST",
-        toast: { success: "Simulation submitted for grading." },
+        toast: {
+          success:
+            session.config.mode === "learn"
+              ? "Calculating your results."
+              : "Simulation submitted for grading.",
+        },
       });
       await onRefresh();
     } catch (nextError) {
@@ -215,7 +322,7 @@ export function QuestionPlayer({
       (answered.has(item.index) || item.index === activeQuestion?.index),
   );
   return (
-    <div className="mx-auto max-w-6xl">
+    <div ref={questionStartRef} className="mx-auto max-w-6xl scroll-mt-24">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-extrabold uppercase tracking-wider text-[#e85b00]">
@@ -244,24 +351,26 @@ export function QuestionPlayer({
         label={`${answered.size} ${t("answered")}`}
       />
       <div className="mt-6 grid gap-5 lg:grid-cols-[1fr_260px]">
-        <section className="card p-6 sm:p-8">
+        <section className="card min-w-0 p-5 sm:p-8">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-extrabold uppercase tracking-wider text-[#e85b00]">
                 {question.topic}
               </p>
-              <h2 className="mt-3 text-xl font-black leading-8 text-[#032e4d]">
+              <h2 className="mt-3 text-lg font-bold leading-8 text-[#032e4d] sm:text-xl">
                 {question.question}
               </h2>
             </div>
             {session.config.mode === "simulate" && (
               <button
                 onClick={flag}
+                disabled={busy}
                 aria-pressed={session.flagged_question_indices.includes(
                   question.index,
                 )}
                 className={`rounded-xl p-3 ${session.flagged_question_indices.includes(question.index) ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-500"}`}
-                aria-label="Flag question"
+                aria-label="Flag for later"
+                title="Flag for later"
               >
                 <Flag size={19} />
               </button>
@@ -273,10 +382,11 @@ export function QuestionPlayer({
               {Object.entries(question.options).map(([letter, text]) => (
                 <label
                   key={letter}
-                  className={`flex cursor-pointer gap-4 rounded-xl border p-4 font-bold transition ${answer === letter ? "border-[#ff6b00] bg-[#fff0e5] text-[#a94100]" : "border-[#dce5eb] hover:border-[#9eb5c3]"}`}
+                  className={`answer-option relative flex min-h-16 cursor-pointer items-start gap-3 rounded-2xl border p-4 transition ${answer === letter ? "border-[#e85b00] bg-[#fff0e5] text-[#a94100] ring-1 ring-[#e85b00]" : "border-[#dce5eb] hover:border-[#9eb5c3]"} ${busy || (session.config.mode === "learn" && Boolean(existing)) ? "cursor-default" : ""}`}
                 >
                   <input
                     type="radio"
+                    className="peer sr-only"
                     name={`question-${question.index}`}
                     value={letter}
                     checked={answer === letter}
@@ -286,8 +396,14 @@ export function QuestionPlayer({
                       (session.config.mode === "learn" && Boolean(existing))
                     }
                   />
-                  <span>
-                    <strong>{letter}.</strong> {text}
+                  <span
+                    aria-hidden="true"
+                    className={`grid size-8 shrink-0 place-items-center rounded-lg text-sm font-bold ${answer === letter ? "bg-[#e85b00] text-white" : "bg-[#edf3f6] text-[#526877]"}`}
+                  >
+                    {letter}
+                  </span>
+                  <span className="pt-1 text-sm font-medium leading-6 sm:text-base">
+                    {text}
                   </span>
                 </label>
               ))}
@@ -302,13 +418,14 @@ export function QuestionPlayer({
                   busy || (session.config.mode === "learn" && Boolean(existing))
                 }
                 onChange={(event) => setAnswer(event.target.value)}
-                placeholder="Write your answer in your own words…"
+                placeholder="Write your answer…"
               />
             </label>
           )}
           {showFeedback && (
             <div
-              className={`mt-6 rounded-2xl p-5 ${displayedFeedback?.result === "correct" ? "bg-emerald-50 text-emerald-900" : "bg-orange-50 text-orange-900"}`}
+              ref={feedbackRef}
+              className={`mt-6 scroll-mt-20 rounded-2xl p-5 sm:scroll-mt-24 ${displayedFeedback?.result === "correct" ? "bg-emerald-50 text-emerald-900" : "bg-orange-50 text-orange-900"}`}
             >
               <p className="font-black capitalize">
                 {displayedFeedback?.result === "correct"
@@ -327,13 +444,20 @@ export function QuestionPlayer({
               )}
             </div>
           )}
-          <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-between">
+          {pendingAnswer === question.index && (
+            <p role="status" className="mt-5 text-sm font-bold text-[#607282]">
+              {session.config.mode === "learn"
+                ? "Checking your answer…"
+                : "Saving your answer…"}
+            </p>
+          )}
+          <div className="question-actions sticky z-10 -mx-2 mt-7 flex flex-col gap-3 rounded-2xl border border-[#dce5eb]/70 bg-white/95 p-2 shadow-[0_4px_20px_rgba(3,46,77,0.06)] backdrop-blur sm:static sm:mx-0 sm:flex-row sm:flex-wrap sm:justify-between sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
             {session.config.mode === "simulate" ? (
               <>
                 <Button
                   className="w-full sm:w-auto"
                   variant="ghost"
-                  disabled={question.index === 1}
+                  disabled={busy || question.index === 1}
                   onClick={() => navigate(question.index - 1)}
                 >
                   <ChevronLeft size={17} />
@@ -351,9 +475,11 @@ export function QuestionPlayer({
                   }}
                   disabled={busy}
                 >
-                  {question.index === session.questions.length
-                    ? t("saveAnswer")
-                    : t("saveNext")}
+                  {busy
+                    ? "Saving…"
+                    : question.index === session.questions.length
+                      ? t("saveAnswer")
+                      : t("saveNext")}
                   <ChevronRight size={17} />
                 </Button>
               </>
@@ -377,6 +503,16 @@ export function QuestionPlayer({
                     onClick={() => navigate(nextLearnQuestion.index)}
                   >
                     {t("next")}
+                    <ChevronRight size={17} />
+                  </Button>
+                )}
+                {learnComplete && !nextLearnQuestion && (
+                  <Button
+                    className="w-full sm:ml-auto sm:w-auto"
+                    disabled={busy}
+                    onClick={submitAll}
+                  >
+                    {busy ? t("grading") : t("seeResults")}
                     <ChevronRight size={17} />
                   </Button>
                 )}
@@ -423,7 +559,7 @@ export function QuestionPlayer({
                   item.index === question.index ? "step" : undefined
                 }
                 aria-label={`Question ${item.index}${answered.has(item.index) ? ", answered" : ""}${item.index === activeQuestion?.index ? ", current" : ""}`}
-                className={`grid aspect-square place-items-center rounded-lg text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-45 ${item.index === question.index ? "bg-[#032e4d] text-white" : answered.has(item.index) ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200" : item.index === activeQuestion?.index && session.config.mode === "learn" ? "bg-[#fff0e5] text-[#b94700] ring-2 ring-[#ff9b52]" : session.flagged_question_indices.includes(item.index) ? "bg-amber-100 text-amber-800" : "bg-[#f1f5f7] text-[#526877]"}`}
+                className={`grid min-h-11 aspect-square place-items-center rounded-xl text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-45 ${item.index === question.index ? "bg-[#032e4d] text-white" : answered.has(item.index) ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200" : item.index === activeQuestion?.index && session.config.mode === "learn" ? "bg-[#fff0e5] text-[#b94700] ring-2 ring-[#ff9b52]" : session.flagged_question_indices.includes(item.index) ? "bg-amber-100 text-amber-800" : "bg-[#f1f5f7] text-[#526877]"}`}
               >
                 {item.index}
               </button>

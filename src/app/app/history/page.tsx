@@ -1,11 +1,11 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { History as HistoryIcon } from "lucide-react";
+import { ChevronRight, History as HistoryIcon } from "lucide-react";
 import Link from "next/link";
 import { apiRequest } from "@/lib/api";
 import { formatDate, formatPercent } from "@/lib/utils";
-import { Spinner } from "@/components/ui/spinner";
+import { PageSkeleton } from "@/components/app/loading-skeleton";
 import { useI18n } from "@/components/providers/i18n-provider";
 
 interface Item {
@@ -28,13 +28,8 @@ export default function HistoryPage() {
     queryFn: () =>
       apiRequest<{ sessions: Item[] }>("/api/v1/history?limit=100"),
   });
-  if (history.isLoading)
-    return (
-      <div className="grid min-h-[60vh] place-items-center">
-        <Spinner label="Loading session history" />
-      </div>
-    );
-  if (history.isError)
+  if (history.isLoading) return <PageSkeleton kind="history" />;
+  if (history.isError && !history.data)
     return (
       <section className="card mx-auto max-w-lg p-8 text-center">
         <h1 className="text-2xl font-black text-[#032e4d]">
@@ -53,12 +48,11 @@ export default function HistoryPage() {
     );
   return (
     <div className="mx-auto max-w-5xl">
-      <p className="eyebrow">Your attempts</p>
-      <h1 className="mt-2 text-4xl font-black tracking-[-0.04em] text-[#032e4d]">
+      <h1 className="text-4xl font-black tracking-[-0.04em] text-[#032e4d]">
         {t("history")}
       </h1>
-      <p className="mt-2 text-[#607282]">
-        Review completed practice sessions and revisit every report.
+      <p className="mt-2 text-sm leading-6 text-[#607282]">
+        Every attempt is a step forward. See what you’ve learned.
       </p>
       <section className="card mt-8 overflow-hidden">
         <div className="divide-y divide-[#dce5eb]">
@@ -67,7 +61,7 @@ export default function HistoryPage() {
               <Link
                 key={item.id}
                 href={`/app/history/${item.id}`}
-                className="grid gap-4 p-5 hover:bg-[#fbfdfd] md:grid-cols-[1fr_auto_auto_auto] md:items-center"
+                className="group grid grid-cols-[1fr_auto] items-center gap-3 p-5 transition-colors hover:bg-[#f7f9fb] md:grid-cols-[1fr_auto_auto_auto] md:gap-4"
               >
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -80,18 +74,22 @@ export default function HistoryPage() {
                       </span>
                     )}
                   </div>
-                  <p className="mt-1 text-xs font-bold uppercase tracking-wide text-[#607282]">
+                  <p className="mt-1 text-xs capitalize leading-5 text-[#607282]">
                     {item.mode} · {item.num_questions} questions
                   </p>
+                  <p className="mt-1 text-xs text-[#607282] md:hidden">
+                    {formatDate(item.completed_at)}
+                  </p>
                 </div>
-                <p className="text-sm text-[#607282]">
+                <p className="hidden text-sm text-[#607282] md:block">
                   {formatDate(item.completed_at)}
                 </p>
-                <span className="w-fit rounded-full bg-[#f1f5f7] px-3 py-1 text-xs font-black capitalize text-[#526877]">
+                <span className="hidden w-fit rounded-full bg-[#f1f5f7] px-3 py-1 text-xs font-semibold capitalize text-[#526877] md:block">
                   {item.difficulty || "intermediate"}
                 </span>
-                <span className="w-fit rounded-full bg-[#e9f8f0] px-3 py-1 text-sm font-black text-[#13734d]">
+                <span className="flex items-center gap-1 rounded-full bg-[#e9f8f0] px-3 py-2 text-sm font-bold text-[#13734d]">
                   {formatPercent(item.percentage)}
+                  <ChevronRight size={14} aria-hidden="true" />
                 </span>
               </Link>
             ))
@@ -99,10 +97,10 @@ export default function HistoryPage() {
             <div className="p-12 text-center">
               <HistoryIcon className="mx-auto text-[#9eb0bc]" />
               <h2 className="mt-4 text-xl font-black text-[#032e4d]">
-                Nothing here yet
+                No completed sessions yet
               </h2>
               <p className="mt-2 text-[#607282]">
-                Complete a session and its report will appear here.
+                Your reports will appear here.
               </p>
               <Link
                 href="/app/new"

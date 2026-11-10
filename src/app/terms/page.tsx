@@ -12,7 +12,7 @@ export default function TermsPage() {
     <LegalPage
       title="Terms of Use"
       intro="These terms set the ground rules for using 10Trials. We have kept them as direct as possible so you can understand what to expect from us and what we expect from you."
-      updatedAt="2 August 2026"
+      updatedAt="8 November 2026"
     >
       <LegalSection title="Agreeing to these terms">
         <p>
@@ -21,11 +21,7 @@ export default function TermsPage() {
           <Link href="/privacy">Privacy Policy</Link>. If you do not agree,
           please do not use the service.
         </p>
-        <p>
-          If you are under 18, your parent or legal guardian must give
-          permission for you to use 10Trials and should review these Terms with
-          you. You must be at least 13 to create an account.
-        </p>
+        <p>You must be 18 or older to create an account or use 10Trials.</p>
       </LegalSection>
 
       <LegalSection title="What 10Trials provides">
@@ -86,15 +82,17 @@ export default function TermsPage() {
         <p>
           Each plan has session and question allowances shown on the pricing and
           billing pages. A session counts once its questions have been
-          successfully generated, even if you later abandon it. Monthly
-          allowances reset on a calendar-month basis and unused allowances do
-          not roll over unless we clearly say otherwise.
+          successfully generated, even if you later abandon it. Free accounts
+          receive 5 sessions of 10 questions each once for the lifetime of the
+          account. Past usage counts; a new month or a subscription cancellation
+          does not restore this allowance. Pro allowances reset each calendar
+          month, and unused monthly allowances do not roll over.
         </p>
         <p>
           We may correct an allowance or plan status when a technical or billing
           error has applied it incorrectly. We will not charge a hidden
           pay-per-use fee for exceeding an allowance; the app will instead ask
-          you to wait for the reset or choose an available plan.
+          you to upgrade, or wait for a monthly reset if your plan includes one.
         </p>
       </LegalSection>
 

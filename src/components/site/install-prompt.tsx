@@ -28,17 +28,16 @@ export function InstallPrompt() {
       window.removeEventListener("beforeinstallprompt", handler);
     };
   }, []);
-  if (standalone) return null;
+  if (standalone || (!event && !ios)) return null;
   return (
-    <div className="card flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center">
-      <div className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[#fff0e5] text-[#e85b00]">
-        <Download />
+    <div className="flex flex-wrap items-start gap-3 rounded-2xl border border-dashed border-[#c8d5dd] bg-[#edf3f6]/50 p-4 sm:items-center sm:p-5">
+      <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-white text-[#07436c]">
+        <Download size={18} />
       </div>
-      <div className="flex-1">
-        <h3 className="font-black text-[#032e4d]">Take 10Trials with you</h3>
-        <p className="mt-1 text-sm text-[#607282]">
-          Install the PWA for quick, full-screen access. Active exams still
-          require an internet connection.
+      <div className="min-w-40 flex-1">
+        <h3 className="font-black text-[#032e4d]">Add to your home screen</h3>
+        <p className="mt-1 text-xs leading-5 text-[#607282]">
+          Open 10Trials faster. Practice requires an internet connection.
         </p>
         {ios && !event && (
           <p className="mt-2 text-xs font-bold">

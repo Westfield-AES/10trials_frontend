@@ -1,6 +1,5 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import {
   Check,
   ChevronLeft,
@@ -9,11 +8,17 @@ import {
   Search,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { apiRequest, waitForJob } from "@/lib/api";
-import type { AccountOverview, Job, Language } from "@/lib/types";
+import { useAccount } from "@/lib/use-account";
+import type { AccountOverview, Job, Language, WebSession } from "@/lib/types";
+import { ActiveSessionCard } from "@/components/app/active-session-card";
+import { PracticeJourneyCard } from "@/components/app/practice-journey";
+import { PageSkeleton } from "@/components/app/loading-skeleton";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { Modal } from "@/components/ui/modal";
+import { EstimatedProgress } from "@/components/ui/progress";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { toast } from "@/lib/toast";
 
@@ -43,10 +48,8 @@ const languages: Array<{ value: Language; label: string }> = [
 export default function NewSessionPage() {
   const { t } = useI18n();
   const router = useRouter();
-  const account = useQuery({
-    queryKey: ["account"],
-    queryFn: () => apiRequest<AccountOverview>("/api/v1/account/me"),
-  });
+  const client = useQueryClient();
+  const account = useAccount();
   const [step, setStep] = useState(1);
   const [description, setDescription] = useState("");
   const [language, setLanguage] = useState<Language>("en");
@@ -60,12 +63,63 @@ export default function NewSessionPage() {
   const [curriculumYear, setCurriculumYear] = useState("Current");
   const [difficulty, setDifficulty] = useState("intermediate");
   const [format, setFormat] = useState("mixed");
-  const [count, setCount] = useState(5);
   const [mode, setMode] = useState<"learn" | "simulate">("learn");
   const [timer, setTimer] = useState(30);
   const [timed, setTimed] = useState(true);
   const [target, setTarget] = useState(80);
   const [busy, setBusy] = useState(false);
+  const [confirmEnd, setConfirmEnd] = useState(false);
+  const [ending, setEnding] = useState(false);
+  const active = account.data?.journey.has_active_session
+    ? account.data.active_session
+    : null;
+  const sessionQuestionCount = 10;
+
+  async function endSession() {
+    if (!active || ending) return;
+    setEnding(true);
+    try {
+      await apiRequest(`/api/v1/sessions/${active.id}`, {
+        method: "DELETE",
+        toast: { success: "Session ended.", error: false },
+      });
+      await Promise.all([
+        client.cancelQueries({ queryKey: ["active-session"] }),
+        client.cancelQueries({ queryKey: ["account"] }),
+      ]);
+      client.removeQueries({ queryKey: ["active-session"] });
+      client.setQueryData<AccountOverview>(["account"], (previous) => {
+        if (!previous || previous.active_session?.id !== active.id)
+          return previous;
+        const { journey } = previous;
+        return {
+          ...previous,
+          active_session: null,
+          journey: {
+            ...journey,
+            has_active_session: false,
+            next_step: journey.can_generate
+              ? journey.phase === "start_free"
+                ? "start_free"
+                : "practice"
+              : journey.usage_period === "lifetime"
+                ? "upgrade"
+                : "wait_for_reset",
+          },
+        };
+      });
+      await client.invalidateQueries({ queryKey: ["account"] });
+      setConfirmEnd(false);
+    } catch (nextError) {
+      toast.error(
+        nextError instanceof Error
+          ? nextError.message
+          : "Could not end the session. Please try again.",
+      );
+    } finally {
+      setEnding(false);
+    }
+  }
 
   async function resolveExam(input: string) {
     if (input.length < 2) return;
@@ -82,10 +136,15 @@ export default function NewSessionPage() {
       );
       const job = await waitForJob<{ exam: Discovery }>(
         created.job_id,
-        (next: Job) => setProgress(next.progress),
+        (next: Job) => {
+          if (!["succeeded", "failed", "cancelled"].includes(next.status))
+            setProgress((previous) => Math.max(previous, next.progress));
+        },
       );
       if (job.status !== "succeeded" || !job.result?.exam)
         throw new Error(job.error_message || "Could not identify that exam.");
+      setProgress(100);
+      await new Promise((resolve) => window.setTimeout(resolve, 550));
       const result = job.result.exam;
       const status = result.status ?? (result.found ? "exact" : "unrecognized");
       if (status !== "exact") {
@@ -145,7 +204,7 @@ export default function NewSessionPage() {
             },
             language,
             format,
-            num_questions: count,
+            num_questions: sessionQuestionCount,
             mode,
             timer_minutes: mode === "simulate" && timed ? timer : null,
             difficulty,
@@ -162,6 +221,43 @@ export default function NewSessionPage() {
           toast: { success: "Session generation started." },
         },
       );
+      const pendingSession: WebSession = {
+        id: result.session_id,
+        status: "generating",
+        language,
+        exam: {
+          raw_input: resolutionInput || description,
+          confirmed_name: discovery.exam_name,
+          governing_body: discovery.governing_body,
+          suggested_format: discovery.suggested_format || "mixed",
+          topics: discovery.common_topics,
+        },
+        config: {
+          format,
+          num_questions: sessionQuestionCount,
+          mode,
+          timer_seconds: mode === "simulate" && timed ? timer * 60 : null,
+        },
+        difficulty,
+        selected_topics: selectedTopics,
+        custom_topics: customTopic
+          .trim()
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
+        curriculum_year: curriculumYear,
+        target_score: target,
+        questions: [],
+        answers: [],
+        feedback: {},
+        current_question_index: 0,
+        flagged_question_indices: [],
+        generation_job_id: result.job_id,
+        is_retry: false,
+      };
+      await client.cancelQueries({ queryKey: ["active-session"] });
+      client.setQueryData(["active-session"], pendingSession);
+      void client.invalidateQueries({ queryKey: ["account"] });
       router.push(`/app/session?job=${result.job_id}`);
     } catch (nextError) {
       toast.error(
@@ -173,20 +269,104 @@ export default function NewSessionPage() {
     }
   }
 
-  const questionOptions = account.data?.entitlements.question_options ?? [5];
+  const curriculumYears = discovery?.curriculum_years?.length
+    ? discovery.curriculum_years
+    : ["Current"];
+  const showCurriculumYear = curriculumYears.some(
+    (year) => year.trim().toLowerCase() !== "current",
+  );
+  if (account.isPending || (ending && !active))
+    return <PageSkeleton kind="new" />;
+  if (active) {
+    const canGenerate = account.data?.journey.can_generate ?? false;
+    return (
+      <div className="mx-auto max-w-4xl">
+        <div className="mb-7">
+          <h1 className="text-4xl font-black tracking-[-0.04em] text-[#032e4d]">
+            Finish your current session
+          </h1>
+        </div>
+        <ActiveSessionCard
+          session={active}
+          onEnd={() => setConfirmEnd(true)}
+          ending={ending}
+          canGenerate={canGenerate}
+        />
+        <Modal
+          open={confirmEnd}
+          title="End this session?"
+          onClose={() => {
+            if (!ending) setConfirmEnd(false);
+          }}
+        >
+          <p className="leading-7 text-[#607282]">
+            You can’t resume an ended session. Generated questions still count
+            toward your allowance.
+          </p>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <Button
+              variant="ghost"
+              onClick={() => setConfirmEnd(false)}
+              disabled={ending}
+            >
+              Keep session
+            </Button>
+            <Button variant="danger" onClick={endSession} disabled={ending}>
+              {ending
+                ? "Ending session…"
+                : canGenerate
+                  ? "End & start new"
+                  : "End session"}
+            </Button>
+          </div>
+        </Modal>
+      </div>
+    );
+  }
+  const allowanceExhausted = account.data && !account.data.journey.can_generate;
+  if (allowanceExhausted) {
+    return (
+      <div className="mx-auto max-w-3xl">
+        <h1 className="mb-7 text-4xl font-black tracking-[-0.04em] text-[#032e4d]">
+          {t("newSession")}
+        </h1>
+        <PracticeJourneyCard account={account.data} />
+      </div>
+    );
+  }
   return (
     <div className="mx-auto max-w-4xl">
       <div className="mb-8">
-        <p className="eyebrow">New session</p>
-        <h1 className="mt-2 text-4xl font-black tracking-[-0.04em] text-[#032e4d]">
-          {t("newHeading")}
+        <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-[#607282]">
+          Make it your own
+        </p>
+        <h1 className="text-4xl font-black tracking-[-0.04em] text-[#032e4d]">
+          {t("newSession")}
         </h1>
-        <p className="mt-2 text-[#607282]">{t("newBody")}</p>
+        <p className="mt-2 text-sm leading-6 text-[#607282]">
+          Your exam. Your focus. Your pace.
+        </p>
       </div>
-      <div className="mb-7">
-        <Progress value={(step / 3) * 100} label={`Step ${step} of 3`} />
-      </div>
-      <section className="card p-6 sm:p-9">
+      <ol
+        aria-label="Session setup progress"
+        className="mb-6 grid grid-cols-3 gap-2"
+      >
+        {["Your exam", "Your topics", "Your session"].map((label, index) => (
+          <li
+            key={label}
+            aria-current={step === index + 1 ? "step" : undefined}
+            className={`flex min-w-0 items-center gap-2 rounded-xl px-2 py-3 text-xs font-semibold sm:gap-3 sm:px-4 sm:text-sm ${step === index + 1 ? "bg-[#fff0e5] text-[#a94100]" : step > index + 1 ? "text-[#07436c]" : "text-[#607282]"}`}
+          >
+            <span
+              className={`grid size-7 shrink-0 place-items-center rounded-full border ${step === index + 1 ? "border-[#e85b00] bg-[#e85b00] text-white" : step > index + 1 ? "border-[#032e4d] bg-[#032e4d] text-white" : "border-[#c8d5dd] bg-white"}`}
+            >
+              {step > index + 1 ? <Check size={14} /> : index + 1}
+            </span>
+            {label}
+          </li>
+        ))}
+      </ol>
+      <section className="card p-5 sm:p-9">
         {step === 1 && (
           <div>
             <div className="grid size-12 place-items-center rounded-2xl bg-[#fff0e5] text-[#e85b00]">
@@ -196,12 +376,12 @@ export default function NewSessionPage() {
               {t("examQuestion")}
             </h2>
             <p className="mt-2 text-[#607282]">
-              Describe it however you know it. Enter the full name when possible. Include the provider or exam code if it helps identify the exact exam.
+              Include the full name or exam code if you know it.
             </p>
             <label className="mt-6 block">
-              <span className="field-label">Describe your exam</span>
+              <span className="field-label">Exam name or description</span>
               <textarea
-                className="field min-h-32 resize-y"
+                className="field min-h-28 resize-y"
                 placeholder="e.g. AWS Certified Solutions Architect, IELTS Academic, Nigerian Bar Exam"
                 value={description}
                 onChange={(event) => {
@@ -211,6 +391,30 @@ export default function NewSessionPage() {
                 }}
               />
             </label>
+            {!clarification && (
+              <div
+                className="mt-3 flex flex-wrap gap-2"
+                aria-label="Example exams"
+              >
+                {["AWS Solutions Architect", "IELTS Academic", "PMP"].map(
+                  (exam) => (
+                    <button
+                      key={exam}
+                      type="button"
+                      disabled={busy}
+                      onClick={() => {
+                        setDescription(exam);
+                        setClarification(null);
+                        setResolutionInput("");
+                      }}
+                      className="min-h-11 rounded-full border border-[#dce5eb] bg-[#f7f9fb] px-3 text-xs font-medium text-[#526877] transition hover:border-[#e85b00] hover:bg-[#fff0e5] disabled:opacity-50"
+                    >
+                      {exam}
+                    </button>
+                  ),
+                )}
+              </div>
+            )}
             <label className="mt-4 block">
               <span className="field-label">Language</span>
               <select
@@ -231,9 +435,9 @@ export default function NewSessionPage() {
             </label>
             {busy && (
               <div className="mt-6 rounded-xl bg-[#f4f8fa] p-4">
-                <Progress
+                <EstimatedProgress
                   value={progress}
-                  label="Researching the exam structure and topic outline"
+                  label="Finding your exam…"
                 />
               </div>
             )}
@@ -244,8 +448,8 @@ export default function NewSessionPage() {
               >
                 <p className="text-sm font-black text-[#032e4d]">
                   {clarification.status === "provisional"
-                    ? "I found the exam context"
-                    : "I need one more detail"}
+                    ? "Confirm your exam"
+                    : "One more detail"}
                 </p>
                 {clarification.exam_name && (
                   <p className="mt-1 text-sm text-[#607282]">
@@ -275,23 +479,19 @@ export default function NewSessionPage() {
                   />
                 </label>
                 <Button
-                  className="mt-4"
+                  className="mt-4 w-full sm:w-auto"
                   variant="secondary"
                   onClick={refineIdentification}
                   disabled={!clarificationAnswer.trim()}
                 >
-                  Continue identifying
+                  Find exam
                   <Search size={17} />
                 </Button>
-                <p className="mt-3 text-xs text-[#607282]">
-                  Your original description is kept; this only adds the detail
-                  needed to make the practice questions relevant.
-                </p>
               </div>
             )}
             {!clarification && (
               <Button
-                className="mt-6"
+                className="mt-6 w-full sm:w-auto"
                 onClick={identify}
                 disabled={busy || description.trim().length < 2}
               >
@@ -309,9 +509,7 @@ export default function NewSessionPage() {
             </h2>
             <p className="mt-1 text-[#607282]">{discovery.governing_body}</p>
             <div className="mt-6 rounded-2xl bg-[#f4f8fa] p-5">
-              <p className="text-sm font-black text-[#032e4d]">
-                Choose exam domains and topics
-              </p>
+              <p className="text-sm font-black text-[#032e4d]">Select topics</p>
               <div className="mt-4 grid gap-2 sm:flex sm:flex-wrap">
                 {discovery.common_topics.map((topic) => {
                   const selected = selectedTopics.includes(topic);
@@ -339,31 +537,28 @@ export default function NewSessionPage() {
               </div>
             </div>
             <label className="mt-5 block">
-              <span className="field-label">
-                Add custom topics (comma-separated)
-              </span>
+              <span className="field-label">Custom topics (optional)</span>
               <input
                 className="field"
                 value={customTopic}
                 onChange={(event) => setCustomTopic(event.target.value)}
-                placeholder="e.g. a specific domain, task, or competency"
+                placeholder="Separate topics with commas"
               />
             </label>
-            <label className="mt-5 block">
-              <span className="field-label">Exam version or year</span>
-              <select
-                className="field"
-                value={curriculumYear}
-                onChange={(event) => setCurriculumYear(event.target.value)}
-              >
-                {(discovery.curriculum_years?.length
-                  ? discovery.curriculum_years
-                  : ["Current"]
-                ).map((year) => (
-                  <option key={year}>{year}</option>
-                ))}
-              </select>
-            </label>
+            {showCurriculumYear && (
+              <label className="mt-5 block">
+                <span className="field-label">Exam version or year</span>
+                <select
+                  className="field"
+                  value={curriculumYear}
+                  onChange={(event) => setCurriculumYear(event.target.value)}
+                >
+                  {curriculumYears.map((year) => (
+                    <option key={year}>{year}</option>
+                  ))}
+                </select>
+              </label>
+            )}
             <div className="mt-7 flex justify-between">
               <Button variant="ghost" onClick={() => setStep(1)}>
                 <ChevronLeft size={17} />
@@ -381,8 +576,7 @@ export default function NewSessionPage() {
         )}
         {step === 3 && discovery && (
           <div>
-            <p className="eyebrow">Shape your attempt</p>
-            <h2 className="mt-2 text-2xl font-black text-[#032e4d]">
+            <h2 className="text-2xl font-black text-[#032e4d]">
               Session settings
             </h2>
             <div className="mt-7 grid gap-6 sm:grid-cols-2">
@@ -414,37 +608,11 @@ export default function NewSessionPage() {
               </label>
             </div>
             <fieldset className="mt-6">
-              <legend className="field-label">{t("numberQuestions")}</legend>
-              <div className="grid grid-cols-2 gap-2">
-                {[5, 10].map((number) => (
-                  <button
-                    key={number}
-                    type="button"
-                    disabled={!questionOptions.includes(number)}
-                    onClick={() => setCount(number)}
-                    className={`rounded-xl border p-3 font-black disabled:cursor-not-allowed disabled:opacity-35 ${count === number ? "border-[#ff6b00] bg-[#fff0e5] text-[#b94700]" : "border-[#dce5eb]"}`}
-                  >
-                    {number}
-                  </button>
-                ))}
-              </div>
-              {questionOptions.length === 1 && (
-                <p className="mt-2 text-xs text-[#607282]">
-                  Free sessions contain 5 questions. Upgrade to Pro to choose 5
-                  or 10.
-                </p>
-              )}
-            </fieldset>
-            <fieldset className="mt-6">
               <legend className="field-label">{t("mode")}</legend>
               <div className="grid gap-3 sm:grid-cols-2">
                 {[
                   ["learn", "Learn", "Feedback after every answer"],
-                  [
-                    "simulate",
-                    "Simulate",
-                    "Review freely, feedback at the end",
-                  ],
+                  ["simulate", "Simulate", "Feedback after submission"],
                 ].map(([value, label, body]) => (
                   <label
                     key={value}
@@ -503,20 +671,26 @@ export default function NewSessionPage() {
                 value={target}
                 onChange={(event) => setTarget(Number(event.target.value))}
               />
-              <span className="mt-1 block text-xs text-[#607282]">
-                This goal shapes report encouragement, not question difficulty.
-              </span>
             </label>
             <div className="mt-7 flex flex-col-reverse justify-between gap-3 sm:flex-row">
-              <Button variant="ghost" onClick={() => setStep(2)}>
+              <Button
+                variant="ghost"
+                onClick={() => setStep(2)}
+                disabled={busy}
+              >
                 <ChevronLeft size={17} />
                 {t("back")}
               </Button>
               <Button onClick={generate} disabled={busy}>
-                {busy ? "…" : t("generate")}
+                {busy ? "Preparing your session…" : t("generate")}
                 <FilePlus2 size={17} />
               </Button>
             </div>
+            {busy && (
+              <div className="mt-6 rounded-xl bg-[#f4f8fa] p-4">
+                <EstimatedProgress value={5} label="Preparing your session" />
+              </div>
+            )}
           </div>
         )}
       </section>

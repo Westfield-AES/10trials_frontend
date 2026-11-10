@@ -6,7 +6,7 @@ export default function NotFound() {
       <section className="card max-w-lg p-8 text-center">
         <p className="eyebrow">404</p>
         <h1 className="mt-3 text-3xl font-black text-[#032e4d]">
-          This page isn’t part of the trial
+          Page not found
         </h1>
         <p className="mt-3 text-[#607282]">
           The link may be outdated, or the page may have moved.

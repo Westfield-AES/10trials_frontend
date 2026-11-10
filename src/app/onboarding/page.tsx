@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { CONSENT_POLICY_VERSION } from "@/lib/policy";
 import type { Language } from "@/lib/types";
@@ -10,6 +11,13 @@ import { AuthGuard } from "@/components/providers/auth-guard";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import { toast } from "@/lib/toast";
+import { useAuth } from "@/components/providers/auth-provider";
+import { AgeConfirmationField } from "@/components/auth/age-confirmation-field";
+import {
+  AGE_CONFIRMATION_STORAGE_KEY,
+  ageConfirmationError,
+  readAgeConfirmation,
+} from "@/lib/age-confirmation";
 
 const languages: Array<{ code: Language; label: string }> = [
   { code: "en", label: "English" },
@@ -20,26 +28,36 @@ const languages: Array<{ code: Language; label: string }> = [
 
 function OnboardingForm() {
   const router = useRouter();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [language, setLanguage] = useState<Language>("en");
-  const [is13, setIs13] = useState(false);
-  const [under18, setUnder18] = useState(false);
-  const [guardian, setGuardian] = useState(false);
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [ageLoaded, setAgeLoaded] = useState(false);
+  const [hasSavedAge, setHasSavedAge] = useState(false);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      const saved = sessionStorage.getItem("10trials-age");
+      const saved =
+        user &&
+        readAgeConfirmation(
+          sessionStorage.getItem(AGE_CONFIRMATION_STORAGE_KEY),
+          user.uid,
+        );
       if (saved) {
-        const value = JSON.parse(saved);
-        setIs13(true);
-        setUnder18(Boolean(value.under18));
-        setGuardian(Boolean(value.guardian));
+        setAgeConfirmed(true);
+      } else {
+        setAgeConfirmed(false);
       }
+      setHasSavedAge(Boolean(saved));
+      setAgeLoaded(true);
     }, 0);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [user]);
   async function finish() {
-    if (!is13 || (under18 && !guardian)) {
-      toast.error("Confirm the age and guardian requirements to continue.");
+    if (!ageLoaded) return;
+    const error = ageConfirmationError(ageConfirmed);
+    if (error) {
+      toast.error(error);
       return;
     }
     setBusy(true);
@@ -47,9 +65,9 @@ function OnboardingForm() {
       await apiRequest("/api/v1/account/age-confirmation", {
         method: "POST",
         body: JSON.stringify({
-          is_13_or_older: is13,
-          is_under_18: under18,
-          guardian_consent: guardian,
+          is_13_or_older: true,
+          is_under_18: false,
+          guardian_consent: false,
           policy_version: CONSENT_POLICY_VERSION,
         }),
       });
@@ -59,8 +77,9 @@ function OnboardingForm() {
         toast: { success: "Your study preferences are ready." },
       });
       localStorage.setItem("10trials-language", language);
-      sessionStorage.removeItem("10trials-age");
-      router.push("/app");
+      sessionStorage.removeItem(AGE_CONFIRMATION_STORAGE_KEY);
+      await queryClient.invalidateQueries({ queryKey: ["account"] });
+      router.push("/app/new");
     } catch (nextError) {
       toast.error(
         nextError instanceof Error
@@ -76,13 +95,11 @@ function OnboardingForm() {
       <div className="mx-auto max-w-2xl">
         <Logo />
         <section className="card mt-8 p-6 sm:p-10">
-          <p className="eyebrow">A quick setup</p>
-          <h1 className="mt-3 text-4xl font-black tracking-[-0.04em] text-[#032e4d]">
-            Make 10Trials yours
+          <h1 className="text-4xl font-black tracking-[-0.04em] text-[#032e4d]">
+            Choose your study language
           </h1>
           <p className="mt-3 text-[#607282]">
-            Your chosen language applies to both the interface and generated
-            exam content.
+            You can change this later in Settings.
           </p>
           <fieldset className="mt-8">
             <legend className="field-label">Study language</legend>
@@ -104,42 +121,21 @@ function OnboardingForm() {
               ))}
             </div>
           </fieldset>
-          <div className="mt-8 space-y-3 rounded-2xl bg-[#f4f8fa] p-5">
-            <label className="flex gap-3">
-              <input
-                type="checkbox"
-                checked={is13}
-                onChange={(event) => setIs13(event.target.checked)}
+          {ageLoaded && !hasSavedAge && (
+            <div className="mt-8">
+              <AgeConfirmationField
+                checked={ageConfirmed}
+                onChange={setAgeConfirmed}
+                disabled={busy}
               />
-              <span>I confirm that I am at least 13 years old.</span>
-            </label>
-            <label className="flex gap-3">
-              <input
-                type="checkbox"
-                checked={under18}
-                onChange={(event) => setUnder18(event.target.checked)}
-              />
-              <span>I am under 18.</span>
-            </label>
-            {under18 && (
-              <label className="flex gap-3">
-                <input
-                  type="checkbox"
-                  checked={guardian}
-                  onChange={(event) => setGuardian(event.target.checked)}
-                />
-                <span>
-                  My parent or guardian consents to my use of 10Trials.
-                </span>
-              </label>
-            )}
-          </div>
+            </div>
+          )}
           <Button
             className="mt-7 w-full sm:w-auto"
             onClick={finish}
-            disabled={busy}
+            disabled={busy || !ageLoaded}
           >
-            {busy ? "Saving…" : "Open my dashboard"}
+            {busy ? "Saving…" : "Continue"}
           </Button>
           <p className="mt-5 text-xs leading-5 text-[#607282]">
             By continuing, you agree to our{" "}
