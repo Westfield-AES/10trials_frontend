@@ -22,6 +22,8 @@ const connectSources = Array.from(
         process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com",
       ),
       origin(process.env.NEXT_PUBLIC_SENTRY_DSN),
+      // PostHog fetches replay configuration from its regional assets host.
+      "https://*.posthog.com",
       "https://accounts.google.com",
       "https://apis.google.com",
       "https://identitytoolkit.googleapis.com",
@@ -54,7 +56,7 @@ const contentSecurityPolicy = [
   "font-src 'self' data:",
   `connect-src ${connectSources.join(" ")}`,
   `frame-src ${frameSources.join(" ")}`,
-  "worker-src 'self' blob:",
+  "worker-src 'self' blob: data:",
   "manifest-src 'self'",
   "media-src 'none'",
   "object-src 'none'",

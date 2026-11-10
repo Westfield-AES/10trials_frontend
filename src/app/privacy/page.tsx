@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalPage, LegalSection } from "@/components/site/legal-page";
-import { CookiePreferencesButton } from "@/components/site/cookie-preferences-button";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
@@ -14,7 +13,7 @@ export default function PrivacyPage() {
     <LegalPage
       title="Privacy Policy"
       intro="We built 10Trials to help you practise, not to trade in your personal information. This policy explains what we collect, why we need it, and the choices you have."
-      updatedAt="8 November 2026"
+      updatedAt="10 November 2026"
     >
       <LegalSection title="The short version">
         <ul>
@@ -24,8 +23,9 @@ export default function PrivacyPage() {
             keep it secure, and improve how it works.
           </li>
           <li>
-            Optional analytics only run when you allow them, and we do not use
-            your study answers to target advertising.
+            Product analytics and masked session replay run automatically to
+            help us understand usage and diagnose problems. We do not use your
+            study answers to target advertising.
           </li>
           <li>
             We do not receive or store your full payment-card number or card
@@ -74,12 +74,14 @@ export default function PrivacyPage() {
           <li>
             <strong>Technical and security information:</strong> IP address,
             basic browser or device information, request timestamps, usage
-            counts, security events, and error diagnostics.
+            counts, security events, error diagnostics, page visits, interface
+            interactions, and masked session recordings. Form inputs and page
+            text are masked before replay data is sent.
           </li>
           <li>
-            <strong>Choices and communications:</strong> cookie preferences,
-            reminder preferences, consent records, support messages, and emails
-            we send about your account.
+            <strong>Choices and communications:</strong> language and reminder
+            preferences, consent records, support messages, and emails we send
+            about your account.
           </li>
         </ul>
       </LegalSection>
@@ -100,8 +102,8 @@ export default function PrivacyPage() {
             prevent abuse, investigate errors, and protect the service; and
           </li>
           <li>
-            understand and improve 10Trials when you have allowed optional
-            analytics.
+            understand usage, diagnose interface problems, and improve 10Trials
+            through product analytics and masked session replay.
           </li>
         </ul>
       </LegalSection>
@@ -116,9 +118,8 @@ export default function PrivacyPage() {
             service you ask for.
           </li>
           <li>
-            <strong>Consent:</strong> for optional analytics and optional
-            reminders. You may withdraw consent at any time for future
-            processing.
+            <strong>Consent:</strong> for optional reminders. You may withdraw
+            consent at any time for future processing.
           </li>
           <li>
             <strong>Legitimate interests:</strong> to keep 10Trials safe,
@@ -162,8 +163,7 @@ export default function PrivacyPage() {
           <li>payment and subscription processors;</li>
           <li>transactional email delivery services;</li>
           <li>
-            analytics and error-monitoring services, subject to your choices
-            where consent is required; and
+            analytics, masked session replay, and error-monitoring services; and
           </li>
           <li>
             professional advisers, regulators, courts, or law-enforcement bodies
@@ -217,14 +217,16 @@ export default function PrivacyPage() {
 
       <LegalSection title="Cookies and similar storage">
         <p>
-          Essential browser storage keeps you signed in, remembers language and
-          privacy choices, and supports core app features. It is necessary for
-          the service to work. Optional analytics storage helps us understand
-          broad product usage and is used only after you choose “Allow
-          analytics.” We do not use advertising cookies or session replay.
+          Browser storage keeps you signed in, remembers your language, and
+          supports core app features. We also use PostHog browser storage for
+          product analytics and masked session replay. Analytics starts
+          automatically when you visit 10Trials and does not require a cookie
+          banner choice. We do not use advertising cookies.
         </p>
-        <p>You can review or change your choice at any time.</p>
-        <CookiePreferencesButton />
+        <p>
+          Replay masks form inputs and page text. We do not record request or
+          response bodies, network headers, or console logs in session replay.
+        </p>
       </LegalSection>
 
       <LegalSection title="Your privacy rights">

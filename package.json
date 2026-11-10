@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:analytics": "node --test tests/analytics.test.mjs"
   },
   "dependencies": {
     "@sentry/nextjs": "^10.65.0",
